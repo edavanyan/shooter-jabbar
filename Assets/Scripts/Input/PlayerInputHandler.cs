@@ -4,14 +4,18 @@ using UnityEngine.InputSystem;
 
 public class PlayerInputHandler : MonoBehaviour
 {
-    public GameObject playerPrefab;
+    [SerializeField]private GameObject playerPrefab;
     private PlayerController _playerController;
+    public PlayerController PlayerController
+    {
+        get { return _playerController; }
+    }
 
-    private void Awake()
+    public void Init()
     {
         var startPoint = GameManager.Instance.SpawnPoints[0].transform.position;
         _playerController = Instantiate(playerPrefab, startPoint, transform.rotation).GetComponent<PlayerController>();
-        _playerController.transform.SetParent(transform);
+        _playerController.Init(GetComponent<PlayerInput>());
     }
 
     public void OnMove(InputAction.CallbackContext context)

@@ -163,3 +163,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerSpeed: 7
+  _playerInput: {fileID: 2150265988460529366, guid: f20bd97580c3c06828e24b0988a489b7, type: 3}

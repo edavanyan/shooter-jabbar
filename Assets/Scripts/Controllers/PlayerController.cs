@@ -12,9 +12,19 @@ public class PlayerController : MonoBehaviour
     [SerializeField]private float playerSpeed = 2.0f;
     private float gravityValue = -9.81f;
     private Vector3 move = Vector3.zero;
-    
+    public PlayerInput PlayerInput
+    {
+        get;
+        private set;
+    }
     public int Score { get; private set; }
-
+    
+    public void Init(PlayerInput playerInput)
+    {
+        PlayerInput = playerInput;
+        transform.SetParent(PlayerInput.transform);
+    }
+    
     private void Awake()
     {
         controller = gameObject.GetComponent<CharacterController>();
@@ -48,5 +58,7 @@ public class PlayerController : MonoBehaviour
     public void UpdateScore(int score)
     {
         Score += score;
+        GameManager.Instance.Events.Get<ScoreUpdatedEvent>().Set(this, Score);
+        GameManager.Instance.Events.FireEvent(typeof(ScoreUpdatedEvent));
     }
 }

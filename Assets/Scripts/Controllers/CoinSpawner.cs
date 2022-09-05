@@ -48,7 +48,6 @@ public class CoinSpawner : MonoBehaviour, EventListener
     [EventHandler]
     void OnCoinPickupEvent(PickupCoinEvent coinEvent)
     {
-        Debug.Log("handle event");
         _coinPool.DestoryItem(coinEvent.Coin);
     }
 }

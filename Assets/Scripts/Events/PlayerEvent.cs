@@ -2,9 +2,9 @@ using UnityEngine.InputSystem;
 
 public class PlayerEvent : Event
 {
-    public PlayerInput PlayerInput { get; private set; }
-    public void Set(PlayerInput playerInput)
+    public PlayerController Player { get; private set; }
+    public virtual void Set(PlayerController player)
     {
-        PlayerInput = playerInput;
+        Player = player;
     }
 }

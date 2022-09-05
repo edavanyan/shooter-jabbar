@@ -6,7 +6,7 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     public GameObject[] SpawnPoints { get; private set; }
-    public List<PlayerInput> Players { get; private set; }
+    public List<PlayerController> Players { get; private set; }
 
     public EventService Events { get; private set; }
 
@@ -27,7 +27,7 @@ public class GameManager : MonoBehaviour
         SpawnPoints = GameObject.FindGameObjectsWithTag("SpawnPoint");
 
         Events = GetComponent<EventService>();
-        Players = new List<PlayerInput>();
+        Players = new List<PlayerController>();
 
         joinAction.Enable();
         joinAction.performed += JoinAction;
@@ -37,9 +37,13 @@ public class GameManager : MonoBehaviour
 
     void OnPlayerJoined(PlayerInput playerInput)
     {
-        Players.Add(playerInput);
+        var playerInputHandler = playerInput.GetComponent<PlayerInputHandler>();
+        playerInputHandler.Init();
         
-        Events.Get<PlayerJoinedEvent>().Set(playerInput);
+        var playerController = playerInputHandler.PlayerController;
+        Players.Add(playerController);
+        
+        Events.Get<PlayerJoinedEvent>().Set(playerController);
         Events.FireEvent(typeof(PlayerJoinedEvent));
     }
     
@@ -58,7 +62,7 @@ public class GameManager : MonoBehaviour
         foreach (var player in Players)
         {
             InputDevice device = null;
-            foreach (var playerDevice in player.devices)
+            foreach (var playerDevice in player.PlayerInput.devices)
             {
                 if (context.control.device == playerDevice)
                 {
@@ -75,13 +79,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void UnregisterPlayer(PlayerInput player)
+    private void UnregisterPlayer(PlayerController player)
     {
         Players.Remove(player);
         
         Events.Get<PlayerLeftEvent>().Set(player);
         Events.FireEvent(typeof(PlayerLeftEvent));
         
-        Destroy(player.gameObject);
+        Destroy(player.PlayerInput.gameObject);
     }
 }
