@@ -847,7 +847,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh24488
+  m_Name: pb_Mesh24496
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -1183,6 +1183,37 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 45.28, y: 0, z: 0}
+--- !u!1 &1068110891
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1068110892}
+  m_Layer: 0
+  m_Name: SpawnPointPrefab
+  m_TagString: SpawnPoint
+  m_Icon: {fileID: 5721338939258241955, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1068110892
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1068110891}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10, y: 0, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1936000275
 GameObject:
   m_ObjectHideFlags: 0
@@ -1216,7 +1247,7 @@ MonoBehaviour:
   m_NotificationBehavior: 0
   m_MaxPlayerCount: -1
   m_AllowJoining: 1
-  m_JoinBehavior: 0
+  m_JoinBehavior: 2
   m_PlayerJoinedEvent:
     m_PersistentCalls:
       m_Calls: []
@@ -1257,6 +1288,40 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73056b7b668196709a579c86c30b4987, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  joinAction:
+    m_Name: Join
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 3cf9f76e-448d-4279-9ccd-3c55683c753a
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: b4f4c70d-b473-455d-b42b-592a97f56513
+      m_Path: <Keyboard>/space
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Join
+      m_Flags: 0
+    m_Flags: 0
+  leaveAction:
+    m_Name: Leave
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 195fc959-967e-4039-8c9b-7de60e4c7dd8
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 2934a2b2-f8ec-437d-acce-afd637346f87
+      m_Path: <Keyboard>/escape
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Leave
+      m_Flags: 0
+    m_Flags: 0
 --- !u!4 &1936000278
 Transform:
   m_ObjectHideFlags: 0

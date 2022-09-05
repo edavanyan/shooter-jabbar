@@ -6,11 +6,11 @@ public class PlayerInputHandler : MonoBehaviour
 {
     public GameObject playerPrefab;
     private PlayerController _playerController;
-    private Vector3 _startPos = new Vector3(0, 0, 0);
 
     private void Awake()
     {
-        _playerController = Instantiate(playerPrefab, _startPos, transform.rotation).GetComponent<PlayerController>();
+        var startPoint = GameManager.Instance.SpawnPoints[0].transform.position;
+        _playerController = Instantiate(playerPrefab, startPoint, transform.rotation).GetComponent<PlayerController>();
         _playerController.transform.SetParent(transform);
     }
 
