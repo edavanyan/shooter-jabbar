@@ -847,7 +847,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh24496
+  m_Name: pb_Mesh24510
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -1226,6 +1226,7 @@ GameObject:
   - component: {fileID: 1936000277}
   - component: {fileID: 1936000276}
   - component: {fileID: 1936000279}
+  - component: {fileID: 1936000280}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1331,7 +1332,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1936000275}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.956333, y: 10.964172, z: 3.86265}
+  m_LocalPosition: {x: 11.08, y: 10.964172, z: 3.86265}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1350,3 +1351,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ad2b2c05f3684196a67786cdfc05340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1936000280
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1936000275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ba909c48fb0a19a287fc434a48d3d2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _coinPrefab: {fileID: 3555301821955916899, guid: 5c32ed99cf1c69796bd6f66324eb8fff, type: 3}
