@@ -8,7 +8,7 @@ public class CameraController : MonoBehaviour, EventListener
     private PlayerController _playerController;
     private bool _isInGame = false;//to avoid expensive null check in update 
 
-    [SerializeField] private float _smoothSpeed = 075f;
+    [SerializeField] private float _smoothSpeed = 002f;
     [SerializeField] private Vector3 _offset;
 
     void Start()
@@ -22,6 +22,10 @@ public class CameraController : MonoBehaviour, EventListener
         {
             var destination = _playerController.transform.position + _offset;
             var smoothPosition = Vector3.Lerp(transform.position, destination, _smoothSpeed);
+            if (smoothPosition.z < -14)
+            {
+                smoothPosition.z = -14;
+            }
             transform.position = smoothPosition;
         }
     }
