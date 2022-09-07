@@ -15,7 +15,6 @@ public class Network : MonoBehaviour
         WebSocket = new WebSocket("ws://shooter-jabbar.herokuapp.com");
         // WebSocket = new WebSocket("ws://localhost:8080");
         WebSocket.OnMessage += (sender, e) =>
-        WebSocket.OnMessage += (sender, e) =>
         {
             Debug.Log(e.Data);
             var data = JsonUtility.FromJson<Json>(e.Data);
