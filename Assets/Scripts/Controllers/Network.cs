@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem.LowLevel;
 using WebSocketSharp;
 
 public class Network : MonoBehaviour
@@ -27,7 +28,7 @@ public class Network : MonoBehaviour
     private DateTime time = DateTime.Now;
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetMouseButtonDown((int)MouseButton.Right))
         {
             time = DateTime.Now;
             _json.message = "join";
