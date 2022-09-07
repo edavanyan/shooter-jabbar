@@ -20,20 +20,6 @@ public class PlayerInputHandler : MonoBehaviour
         _playerController.Init(GetComponent<PlayerInput>());
     }
 
-    // private const float time = 1f;
-    // private float timer = 0;
-    // private bool isMoving = false;
-    //
-    // private void Update()
-    // {
-    //     timer += Time.deltaTime;
-    //     if (timer > time)
-    //     {
-    //         _playerController.OnMove(_movement);
-    //         timer = 0;
-    //     }
-    // }
-
     public void OnMove(InputAction.CallbackContext context)
     {
         _movement = context.ReadValue<Vector2>();
