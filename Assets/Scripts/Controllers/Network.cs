@@ -4,27 +4,51 @@ using WebSocketSharp;
 
 public class Network : MonoBehaviour
 {
-    private WebSocket _webSocket;
-    // Start is called before the first frame update
+    public WebSocket WebSocket
+    {
+        get;
+        private set;
+    }
+    
     void Start()
     {
-        _webSocket = new WebSocket("ws://shooter-jabbar.herokuapp.com");
-        // _webSocket = new WebSocket("ws://localhost:8080");
-        _webSocket.OnMessage += (sender, e) =>
+        WebSocket = new WebSocket("ws://shooter-jabbar.herokuapp.com");
+        // WebSocket = new WebSocket("ws://localhost:8080");
+        WebSocket.OnMessage += (sender, e) =>
+        WebSocket.OnMessage += (sender, e) =>
         {
-            Debug.Log("received: " + e.Data + " :" + DateTime.Now.Subtract(time).Milliseconds);
+            Debug.Log(e.Data);
+            var data = JsonUtility.FromJson<Json>(e.Data);
+            GameManager.Instance.Events.Get<WebMessageReceivedEvent>().Set((WebSocket)sender, data);
+            GameManager.Instance.Events.FireEvent(typeof(WebMessageReceivedEvent));
         };
-        _webSocket.Connect();
+        WebSocket.Connect();
     }
 
     private DateTime time = DateTime.Now;
-    // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.F))
+        if (Input.GetKeyDown(KeyCode.Space))
         {
             time = DateTime.Now;
-            _webSocket.Send("{\"message\" : \"Hello\", \"sender\" : \"edddddaa\"}");
+            _json.message = "join";
+            WebSocket.Send(JsonUtility.ToJson(_json));
         }
+    }
+
+    private Json _json;
+    public void SendMove(Vector2 movement)
+    {
+        _json.message = "move";
+        _json.data = movement;
+        var jsonData = JsonUtility.ToJson(_json);
+        Debug.Log("sendng: " + jsonData);
+        WebSocket.Send(jsonData);
+    }
+
+    public struct Json
+    {
+        public string message;
+        public Vector2 data;
     }
 }

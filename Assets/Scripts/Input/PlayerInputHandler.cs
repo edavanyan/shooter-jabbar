@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,6 +7,7 @@ public class PlayerInputHandler : MonoBehaviour
 {
     [SerializeField]private GameObject playerPrefab;
     private PlayerController _playerController;
+    private Vector2 _movement = Vector2.zero;
     public PlayerController PlayerController
     {
         get { return _playerController; }
@@ -18,8 +20,23 @@ public class PlayerInputHandler : MonoBehaviour
         _playerController.Init(GetComponent<PlayerInput>());
     }
 
+    // private const float time = 1f;
+    // private float timer = 0;
+    // private bool isMoving = false;
+    //
+    // private void Update()
+    // {
+    //     timer += Time.deltaTime;
+    //     if (timer > time)
+    //     {
+    //         _playerController.OnMove(_movement);
+    //         timer = 0;
+    //     }
+    // }
+
     public void OnMove(InputAction.CallbackContext context)
     {
-        _playerController.OnMove(context);
+        _movement = context.ReadValue<Vector2>();
+        GameManager.Instance.Network.SendMove(_movement);
     }
 }

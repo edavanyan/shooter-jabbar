@@ -18,6 +18,7 @@ public class EventService : MonoBehaviour
         _events.Add(typeof(PlayerLeftEvent), new PlayerLeftEvent());
         _events.Add(typeof(PickupCoinEvent), new PickupCoinEvent());
         _events.Add(typeof(ScoreUpdatedEvent), new ScoreUpdatedEvent());
+        _events.Add(typeof(WebMessageReceivedEvent), new WebMessageReceivedEvent());
     }
 
     public T Get<T>() where T : Event

@@ -3,19 +3,27 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.InputSystem.UI;
+using WebSocketSharp;
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviour, EventListener
 {
     public static GameManager Instance { get; private set; }
+    [SerializeField] private PlayerInput _playerInputPrefab;
+    [SerializeField] private PlayerController _playerPrefab;
     public GameObject[] SpawnPoints { get; private set; }
-    public List<PlayerController> Players { get; private set; }
+    public Dictionary<WebSocket, PlayerController> Players { get; private set; }
 
+    private readonly Dictionary<WebSocket, Action<WebSocket>> runOnMainThread =
+        new Dictionary<WebSocket, Action<WebSocket>>();
+
+    PlayerController Player
+    {
+        get { return Players[Network.WebSocket]; }
+    }
     public EventService Events { get; private set; }
     public BulletController BulletController { get; private set; }
     public Network Network { get; private set; }
-
-    [SerializeField] InputAction joinAction;
-    [SerializeField] InputAction leaveAction;
 
     [SerializeField] private LayerMask _layerMask;
     [SerializeField] private Camera _camera;
@@ -36,25 +44,36 @@ public class GameManager : MonoBehaviour
         Events = GetComponent<EventService>();
         BulletController = GetComponent<BulletController>();
         Network = GetComponent<Network>();
-        
-        Players = new List<PlayerController>();
 
-        joinAction.Enable();
-        joinAction.performed += JoinAction;
-        leaveAction.Enable();
-        leaveAction.performed += LeaveAction;
+        Players = new Dictionary<WebSocket, PlayerController>();
+        
+        Events.RegisterObserver(this);
     }
 
-    void OnPlayerJoined(PlayerInput playerInput)
+    void JoinPlayer(WebSocket socket)
     {
-        var playerInputHandler = playerInput.GetComponent<PlayerInputHandler>();
-        playerInputHandler.Init();
-        
-        var playerController = playerInputHandler.PlayerController;
-        Players.Add(playerController);
+        PlayerController playerController;
+        if (IsMyMessage(socket))
+        {
+            var playerInputHandler = Instantiate(_playerInputPrefab).GetComponent<PlayerInputHandler>();
+            playerInputHandler.Init();
+
+            playerController = playerInputHandler.PlayerController;
+        }
+        else
+        {
+            playerController = Instantiate(_playerInputPrefab).GetComponent<PlayerController>();
+        }
+
+        Players.Add(socket, playerController);
         
         Events.Get<PlayerJoinedEvent>().Set(playerController);
         Events.FireEvent(typeof(PlayerJoinedEvent));
+    }
+
+    private bool IsMyMessage(WebSocket socket)
+    {
+        return Network.WebSocket.Equals(socket);
     }
 
     private void Update()
@@ -65,7 +84,7 @@ public class GameManager : MonoBehaviour
             var ray = _camera.ScreenPointToRay(touchPosition);
             if (Physics.Raycast(ray, out var hit, _layerMask))
             {
-                var playerPosition = Players[0].transform.position;
+                var playerPosition = Player.transform.position;
                 playerPosition.y = 1.5f;
                 var hitPoint = hit.point;
                 hitPoint.y = 1.5f;
@@ -73,6 +92,12 @@ public class GameManager : MonoBehaviour
                 BulletController.Fire(playerPosition, velocity.normalized);
             }
         }
+
+        foreach (var action in runOnMainThread)
+        {
+            action.Value(action.Key);
+        }
+        runOnMainThread.Clear();
     }
 
     void OnPlayerLeft(PlayerInput playerInput)
@@ -87,7 +112,7 @@ public class GameManager : MonoBehaviour
     
     void LeaveAction(InputAction.CallbackContext context)
     {
-        foreach (var player in Players)
+        foreach (var player in Players.Values)
         {
             InputDevice device = null;
             foreach (var playerDevice in player.PlayerInput.devices)
@@ -109,11 +134,38 @@ public class GameManager : MonoBehaviour
 
     private void UnregisterPlayer(PlayerController player)
     {
-        Players.Remove(player);
-        
-        Events.Get<PlayerLeftEvent>().Set(player);
-        Events.FireEvent(typeof(PlayerLeftEvent));
-        
-        Destroy(player.PlayerInput.gameObject);
+        WebSocket keySocket = null;
+        foreach (var socket in Players)
+        {
+            if (player.Equals(socket.Value))
+            {
+                keySocket = socket.Key;
+                break;
+            }
+        }
+
+        if (keySocket != null)
+        {
+            Players.Remove(keySocket);
+
+            Events.Get<PlayerLeftEvent>().Set(player);
+            Events.FireEvent(typeof(PlayerLeftEvent));
+
+            Destroy(player.PlayerInput.gameObject);
+        }
+    }
+
+    [EventHandler]
+    void WebMessageEvent(WebMessageReceivedEvent messageReceivedEvent)
+    {
+        if (messageReceivedEvent.Data.message == "join")
+        {
+            runOnMainThread.Add(messageReceivedEvent.Socket, JoinPlayer);
+        }
+
+        if (messageReceivedEvent.Data.message == "move")
+        {
+            Players[messageReceivedEvent.Socket].OnMove(messageReceivedEvent.Data.data);
+        }
     }
 }
