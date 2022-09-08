@@ -6,7 +6,7 @@ using UnityEngine;
 public class Bullet : MonoBehaviour, IPoolable
 {
     private Rigidbody _rigidbody;
-    private readonly float _bulletSpeed = 30f;
+    private readonly float _bulletSpeed = 20f;
 
     public event Action<Collider> OnBulletTriggerEnter; 
     

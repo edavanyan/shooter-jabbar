@@ -10,18 +10,29 @@ public class Network : MonoBehaviour
 {
     private WebSocket ws;
 
+    internal bool IsConnected
+    {
+        get;
+        private set;
+    }
+
     public string Id
     {
         get;
         private set;
     }
+
+#if !UNITY_EDITOR
+    private const string url = "ws://localhost:8080";
+#else
+    private const string url = "wss://shooter-jabbar.herokuapp.com";
+#endif
     
     async void Start()
     {
-        ws = WebSocketFactory.CreateInstance("wss://shooter-jabbar.herokuapp.com");
-        // ws = new WebSocket("ws://localhost:8080");
+        ws = WebSocketFactory.CreateInstance(url);
+        
         Id = Guid.NewGuid().ToString();
-        Debug.Log("Connecting with: " + Id);
         ws.OnMessage += (message) =>
         {
             var json = Encoding.UTF8.GetString(message);
@@ -34,7 +45,7 @@ public class Network : MonoBehaviour
             {
                 IJson data;
                 var webMessageReceivedEvent = GameManager.Instance.Events.Get<WebMessageReceivedEvent>();
-                if (tmp.message == "move" || tmp.message == "join")
+                if (tmp.message == "move" || tmp.message == "join" || tmp.message == "fire")
                 {
                     data = JsonUtility.FromJson<Json<Vector2>>(json);
                     webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
@@ -55,7 +66,31 @@ public class Network : MonoBehaviour
                 GameManager.Instance.Events.FireEvent(typeof(WebMessageReceivedEvent));
             }
         };
+
+        ws.OnOpen += () =>
+        {
+            IsConnected = true;
+            Debug.Log("Connecting with: " + Id);
+        };
+        
         await ws.Connect();
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (IsConnected && hasFocus)
+        {
+            GetMapData();
+        }
+    }
+
+    async void GetMapData()
+    {
+        Json<string> data;
+        data.id = Id;
+        data.message = "get_map";
+        data.data = "";
+        await ws.SendText(JsonUtility.ToJson(data));
     }
 
     async void SendMapData(string id)
@@ -81,7 +116,6 @@ public class Network : MonoBehaviour
         await ws.SendText(mapString);
     }
 
-    private DateTime time = DateTime.Now;
     void Update()
     {
     #if UNITY_EDITOR || UNITY_STANDALONE_LINUX
@@ -102,7 +136,6 @@ public class Network : MonoBehaviour
     {
         Json<object> json;
         json.id = Guid.NewGuid().ToString();
-        time = DateTime.Now;
         json.message = "join_bot";
         json.data = "";
         var data = JsonUtility.ToJson(json);
@@ -113,7 +146,6 @@ public class Network : MonoBehaviour
     {
         Json<object> json;
         json.id = Id;
-        time = DateTime.Now;
         json.message = "join";
         json.data = "";
         var data = JsonUtility.ToJson(json);
@@ -134,18 +166,21 @@ public class Network : MonoBehaviour
         var jsonData = JsonUtility.ToJson(json);
         await ws.Send(Encoding.UTF8.GetBytes(jsonData));
     }
+
+    public async void SendFire(Vector2 direction)
+    {
+        Json<Vector2> data;
+        data.id = Id;
+        data.message = "fire";
+        data.data = direction;
+        await ws.SendText(JsonUtility.ToJson(data));
+    }
     
     public interface IJson
     {
         string GetId();
         string GetMessage();
         object GetData();
-    }
-
-    public struct SimpleJson<T>
-    {
-        public string key;
-        public T jValue;
     }
 
     public struct Json<T> : IJson

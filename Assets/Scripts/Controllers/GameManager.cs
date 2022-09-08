@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,10 +12,6 @@ public class GameManager : MonoBehaviour, EventListener
     [SerializeField] private PlayerController _playerPrefab;
     public GameObject[] SpawnPoints { get; private set; }
     public Dictionary<string, PlayerController> Players { get; private set; }
-
-    private MainThreadRunnableArgs<Vector2> mainThreadArgs;
-    private readonly Dictionary<MainThreadRunnableArgs<Vector2>, Action<string, Vector2>> runOnMainThread =
-        new Dictionary<MainThreadRunnableArgs<Vector2>, Action<string, Vector2>>();
 
     public PlayerController Player
     {
@@ -59,8 +56,9 @@ public class GameManager : MonoBehaviour, EventListener
         Debug.Log("Bye");
     }
 
-    private void UnregisterPlayer(string id, Vector2 position)
+    IEnumerator UnregisterPlayer(string id)
     {
+        yield return new WaitForUpdate();
         var player = Players[id];
         Players.Remove(id);
         Events.Get<PlayerLeftEvent>().Set(player);
@@ -69,8 +67,26 @@ public class GameManager : MonoBehaviour, EventListener
         Destroy(player.gameObject);
     }
 
-    void JoinPlayer(string id, Vector2 position)
+    IEnumerator PositionPlayer(string id, Vector2 position)
     {
+        yield return new WaitForUpdate();
+        
+        Players[id].transform.position = new Vector3(position.x, 0.5f, position.y);
+    }
+
+    IEnumerator FireBullet(string id, Vector2 position)
+    {
+        yield return new WaitForUpdate();
+        
+        var playerPosition = Players[id].transform.position;
+        playerPosition.y = 1.5f;
+        BulletController.Fire(playerPosition, new Vector3(position.x, 0, position.y));
+    }
+
+    IEnumerator JoinPlayer(string id, Vector2 position)
+    {
+        yield return new WaitForUpdate();
+        
         Vector3 spawnPoint = new Vector3(position.x, 0.5f, position.y);
         PlayerController playerController;
         var isMyMessage = IsMyMessage(id);
@@ -104,16 +120,12 @@ public class GameManager : MonoBehaviour, EventListener
                 playerPosition.y = 1.5f;
                 var hitPoint = hit.point;
                 hitPoint.y = 1.5f;
-                var velocity = hitPoint - playerPosition;
-                BulletController.Fire(playerPosition, velocity.normalized);
+                var direction = hitPoint - playerPosition;
+                direction = direction.normalized;
+
+                Network.SendFire(new Vector2(direction.x, direction.z));
             }
         }
-
-        foreach (var action in runOnMainThread)
-        {
-            action.Value(action.Key.id, action.Key.data);
-        }
-        runOnMainThread.Clear();
     }
 
     [EventHandler]
@@ -121,9 +133,7 @@ public class GameManager : MonoBehaviour, EventListener
     {
         if (messageReceivedEvent.Message == "join")
         {
-            mainThreadArgs.id = messageReceivedEvent.Id;
-            mainThreadArgs.data = (Vector2)messageReceivedEvent.Data;
-            runOnMainThread.Add(mainThreadArgs, JoinPlayer);
+            StartCoroutine(JoinPlayer(messageReceivedEvent.Id, (Vector2)messageReceivedEvent.Data));
         }
 
         if (messageReceivedEvent.Message == "move")
@@ -138,28 +148,27 @@ public class GameManager : MonoBehaviour, EventListener
         if (messageReceivedEvent.Message == "map")
         {
             var data = (Dictionary<string, Vector2>)messageReceivedEvent.Data;
-            foreach (var d in data)
+            foreach (var (id, position) in data)
             {
-                if (!Players.ContainsKey(d.Key))
+                if (!Players.ContainsKey(id))
                 {
-                    mainThreadArgs.id = d.Key;
-                    mainThreadArgs.data = d.Value;
-                    runOnMainThread.Add(mainThreadArgs, JoinPlayer);
+                    StartCoroutine(JoinPlayer(id, position));
+                }
+                else
+                {
+                    StartCoroutine(PositionPlayer(id, position));
                 }
             }
+        }
+        
+        if (messageReceivedEvent.Message == "fire")
+        {
+            StartCoroutine(FireBullet(messageReceivedEvent.Id, (Vector2)messageReceivedEvent.Data));
         }
 
         if (messageReceivedEvent.Message == "disconnect")
         {
-            mainThreadArgs.id = messageReceivedEvent.Id;
-            mainThreadArgs.data = Vector2.zero;
-            runOnMainThread.Add(mainThreadArgs, UnregisterPlayer);
+            StartCoroutine(UnregisterPlayer(messageReceivedEvent.Id));
         }
-    }
-
-    internal struct MainThreadRunnableArgs<T>
-    {
-        internal string id;
-        internal T data;
     }
 }

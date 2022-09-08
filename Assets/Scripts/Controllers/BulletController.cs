@@ -14,7 +14,7 @@ public class BulletController : MonoBehaviour
         _bulletPool = new ComponentPool<Bullet>(_bulletPrefab);
     }
 
-    public void Fire(Vector3 position, Vector3 velocity)
+    public void Fire(Vector3 position, Vector3 direction)
     {
         var bullet = _bulletPool.NewItem();
         bullet.transform.position = position;
@@ -26,7 +26,7 @@ public class BulletController : MonoBehaviour
                 _bullets.Remove(bullet);
             }
         };
-        _bullets.Add(bullet, velocity);
+        _bullets.Add(bullet, direction);
     }
     
     void FixedUpdate()
