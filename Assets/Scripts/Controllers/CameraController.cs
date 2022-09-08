@@ -1,11 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using JetBrains.Annotations;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour, EventListener
 {
-    private PlayerController _playerController;
     private bool _isInGame = false;//to avoid expensive null check in update 
 
     [SerializeField] private float _smoothSpeed = 002f;
@@ -20,7 +16,7 @@ public class CameraController : MonoBehaviour, EventListener
     {
         if (_isInGame)
         {
-            var destination = _playerController.transform.position + _offset;
+            var destination = GameManager.Instance.Player.transform.position + _offset;
             var smoothPosition = Vector3.Lerp(transform.position, destination, _smoothSpeed);
             if (smoothPosition.z < -14)
             {
@@ -33,13 +29,6 @@ public class CameraController : MonoBehaviour, EventListener
     [EventHandler]
     void OnPlayerJoined(PlayerJoinedEvent playerJoinedEvent)
     {
-        _playerController = playerJoinedEvent.Player;
-        _isInGame = true;
-    }
-
-    [EventHandler]
-    void OnPlayerLeft(PlayerLeftEvent playerLeftEvent)
-    {
-        _isInGame = false;
+        _isInGame = _isInGame || playerJoinedEvent.IsMe;
     }
 }

@@ -11,6 +11,9 @@ public class CoinSpawner : MonoBehaviour, EventListener
     private int _minX = -11, _maxX = 11;
     private int _minY = -11, _maxY = 11;
 
+    private int _coinCount;
+    [SerializeField]private int _maxCoins;
+
     private void Awake()
     {
         _coinPool = new ComponentPool<Coin>(_coinPrefab);
@@ -41,13 +44,18 @@ public class CoinSpawner : MonoBehaviour, EventListener
 
     private void SpawnCoin()
     {
-        Coin coin = _coinPool.NewItem();
-        coin.transform.position = RandomPosition();
+        if (_coinCount < _maxCoins)
+        {
+            _coinCount++;
+            Coin coin = _coinPool.NewItem();
+            coin.transform.position = RandomPosition();
+        }
     }
 
     [EventHandler]
     void OnCoinPickupEvent(PickupCoinEvent coinEvent)
     {
+        _coinCount--;
         _coinPool.DestoryItem(coinEvent.Coin);
     }
 }

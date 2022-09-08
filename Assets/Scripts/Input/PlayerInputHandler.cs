@@ -13,10 +13,9 @@ public class PlayerInputHandler : MonoBehaviour
         get { return _playerController; }
     }
 
-    public void Init()
+    public void Init(Vector3 position)
     {
-        var startPoint = GameManager.Instance.SpawnPoints[0].transform.position;
-        _playerController = Instantiate(playerPrefab, startPoint, transform.rotation).GetComponent<PlayerController>();
+        _playerController = Instantiate(playerPrefab, position, transform.rotation).GetComponent<PlayerController>();
         _playerController.Init(GetComponent<PlayerInput>());
     }
 

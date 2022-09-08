@@ -2,12 +2,14 @@ using WebSocketSharp;
 
 public class WebMessageReceivedEvent : Event
 {
-    public WebSocket Socket { get; private set; }
-    public Network.Json Data { get; private set; }
+    public string Id { get; private set; }
+    public string Message { get; private set; }
+    public object Data { get; private set; }
 
-    public void Set(WebSocket socket, Network.Json data)
+    public void Set(string id, string message, object data)
     {
-        Socket = socket;
+        Id = id;
+        Message = message;
         Data = data;
     }
 }

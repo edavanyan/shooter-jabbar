@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
-using UnityEngine.InputSystem.UI;
-using WebSocketSharp;
 
 public class GameManager : MonoBehaviour, EventListener
 {
@@ -12,14 +10,15 @@ public class GameManager : MonoBehaviour, EventListener
     [SerializeField] private PlayerInput _playerInputPrefab;
     [SerializeField] private PlayerController _playerPrefab;
     public GameObject[] SpawnPoints { get; private set; }
-    public Dictionary<WebSocket, PlayerController> Players { get; private set; }
+    public Dictionary<string, PlayerController> Players { get; private set; }
 
-    private readonly Dictionary<WebSocket, Action<WebSocket>> runOnMainThread =
-        new Dictionary<WebSocket, Action<WebSocket>>();
+    private MainThreadRunnableArgs<Vector2> mainThreadArgs;
+    private readonly Dictionary<MainThreadRunnableArgs<Vector2>, Action<string, Vector2>> runOnMainThread =
+        new Dictionary<MainThreadRunnableArgs<Vector2>, Action<string, Vector2>>();
 
-    PlayerController Player
+    public PlayerController Player
     {
-        get { return Players[Network.WebSocket]; }
+        get { return Players[Network.Id]; }
     }
     public EventService Events { get; private set; }
     public BulletController BulletController { get; private set; }
@@ -45,35 +44,52 @@ public class GameManager : MonoBehaviour, EventListener
         BulletController = GetComponent<BulletController>();
         Network = GetComponent<Network>();
 
-        Players = new Dictionary<WebSocket, PlayerController>();
+        Players = new Dictionary<string, PlayerController>();
         
         Events.RegisterObserver(this);
     }
 
-    void JoinPlayer(WebSocket socket)
+    private bool IsMyMessage(string id)
     {
+        return Network.Id.Equals(id);
+    }
+
+    void OnPlayerLeft(PlayerInput playerInput)
+    {
+        Debug.Log("Bye");
+    }
+
+    private void UnregisterPlayer(string id, Vector2 position)
+    {
+        var player = Players[id];
+        Players.Remove(id);
+        Events.Get<PlayerLeftEvent>().Set(player);
+        Events.FireEvent(typeof(PlayerLeftEvent));
+
+        Destroy(player.gameObject);
+    }
+
+    void JoinPlayer(string id, Vector2 position)
+    {
+        Vector3 spawnPoint = new Vector3(position.x, 0.5f, position.y);
         PlayerController playerController;
-        if (IsMyMessage(socket))
+        var isMyMessage = IsMyMessage(id);
+        if (isMyMessage)
         {
             var playerInputHandler = Instantiate(_playerInputPrefab).GetComponent<PlayerInputHandler>();
-            playerInputHandler.Init();
+            playerInputHandler.Init(spawnPoint);
 
             playerController = playerInputHandler.PlayerController;
         }
         else
         {
-            playerController = Instantiate(_playerInputPrefab).GetComponent<PlayerController>();
+            playerController = Instantiate(_playerPrefab, spawnPoint, Quaternion.identity).GetComponent<PlayerController>();
         }
 
-        Players.Add(socket, playerController);
+        Players.Add(id, playerController);
         
-        Events.Get<PlayerJoinedEvent>().Set(playerController);
+        Events.Get<PlayerJoinedEvent>().Set(playerController, isMyMessage);
         Events.FireEvent(typeof(PlayerJoinedEvent));
-    }
-
-    private bool IsMyMessage(WebSocket socket)
-    {
-        return Network.WebSocket.Equals(socket);
     }
 
     private void Update()
@@ -95,77 +111,55 @@ public class GameManager : MonoBehaviour, EventListener
 
         foreach (var action in runOnMainThread)
         {
-            action.Value(action.Key);
+            action.Value(action.Key.id, action.Key.data);
         }
         runOnMainThread.Clear();
-    }
-
-    void OnPlayerLeft(PlayerInput playerInput)
-    {
-        Debug.Log("Bye");
-    }
-
-    void JoinAction(InputAction.CallbackContext context)
-    {
-        PlayerInputManager.instance.JoinPlayerFromActionIfNotAlreadyJoined(context);
-    }
-    
-    void LeaveAction(InputAction.CallbackContext context)
-    {
-        foreach (var player in Players.Values)
-        {
-            InputDevice device = null;
-            foreach (var playerDevice in player.PlayerInput.devices)
-            {
-                if (context.control.device == playerDevice)
-                {
-                    device = playerDevice;
-                    break;
-                }
-            }
-
-            if (device != null)
-            {
-                UnregisterPlayer(player);
-                break;
-            }
-        }
-    }
-
-    private void UnregisterPlayer(PlayerController player)
-    {
-        WebSocket keySocket = null;
-        foreach (var socket in Players)
-        {
-            if (player.Equals(socket.Value))
-            {
-                keySocket = socket.Key;
-                break;
-            }
-        }
-
-        if (keySocket != null)
-        {
-            Players.Remove(keySocket);
-
-            Events.Get<PlayerLeftEvent>().Set(player);
-            Events.FireEvent(typeof(PlayerLeftEvent));
-
-            Destroy(player.PlayerInput.gameObject);
-        }
     }
 
     [EventHandler]
     void WebMessageEvent(WebMessageReceivedEvent messageReceivedEvent)
     {
-        if (messageReceivedEvent.Data.message == "join")
+        if (messageReceivedEvent.Message == "join")
         {
-            runOnMainThread.Add(messageReceivedEvent.Socket, JoinPlayer);
+            mainThreadArgs.id = messageReceivedEvent.Id;
+            mainThreadArgs.data = (Vector2)messageReceivedEvent.Data;
+            runOnMainThread.Add(mainThreadArgs, JoinPlayer);
         }
 
-        if (messageReceivedEvent.Data.message == "move")
+        if (messageReceivedEvent.Message == "move")
         {
-            Players[messageReceivedEvent.Socket].OnMove(messageReceivedEvent.Data.data);
+            if (Players.ContainsKey(messageReceivedEvent.Id))
+            {
+                var data = (Vector2)messageReceivedEvent.Data;
+                Players[messageReceivedEvent.Id].OnMove(data);
+            }
         }
+        
+        if (messageReceivedEvent.Message == "map")
+        {
+            var data = (Dictionary<string, Vector2>)messageReceivedEvent.Data;
+            foreach (var d in data)
+            {
+                if (!Players.ContainsKey(d.Key))
+                {
+                    mainThreadArgs.id = d.Key;
+                    mainThreadArgs.data = d.Value;
+                    runOnMainThread.Add(mainThreadArgs, JoinPlayer);
+                }
+            }
+        }
+
+        if (messageReceivedEvent.Message == "disconnect")
+        {
+            mainThreadArgs.id = messageReceivedEvent.Id;
+            mainThreadArgs.data = Vector2.zero;
+            runOnMainThread.Add(mainThreadArgs, UnregisterPlayer);
+        }
+    }
+
+    internal struct MainThreadRunnableArgs<T>
+    {
+        internal string id;
+        internal T data;
     }
 }

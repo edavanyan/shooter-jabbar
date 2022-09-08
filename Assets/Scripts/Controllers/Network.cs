@@ -1,54 +1,171 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
+using NativeWebSocket;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.InputSystem.LowLevel;
-using WebSocketSharp;
 
 public class Network : MonoBehaviour
 {
-    public WebSocket WebSocket
+    private WebSocket ws;
+
+    public string Id
     {
         get;
         private set;
     }
     
-    void Start()
+    async void Start()
     {
-        WebSocket = new WebSocket("ws://shooter-jabbar.herokuapp.com");
-        // WebSocket = new WebSocket("ws://localhost:8080");
-        WebSocket.OnMessage += (sender, e) =>
+        ws = WebSocketFactory.CreateInstance("wss://shooter-jabbar.herokuapp.com");
+        // ws = new WebSocket("ws://localhost:8080");
+        Id = Guid.NewGuid().ToString();
+        Debug.Log("Connecting with: " + Id);
+        ws.OnMessage += (message) =>
         {
-            Debug.Log(e.Data);
-            var data = JsonUtility.FromJson<Json>(e.Data);
-            GameManager.Instance.Events.Get<WebMessageReceivedEvent>().Set((WebSocket)sender, data);
-            GameManager.Instance.Events.FireEvent(typeof(WebMessageReceivedEvent));
+            var json = Encoding.UTF8.GetString(message);
+            var tmp = JsonUtility.FromJson<Json<object>>(json);
+            if (tmp.message == "get_map")
+            {
+                SendMapData(tmp.id);
+            }
+            else
+            {
+                IJson data;
+                var webMessageReceivedEvent = GameManager.Instance.Events.Get<WebMessageReceivedEvent>();
+                if (tmp.message == "move" || tmp.message == "join")
+                {
+                    data = JsonUtility.FromJson<Json<Vector2>>(json);
+                    webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
+                }
+                else if (tmp.message == "map")
+                {
+                    var dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    var positions =
+                        JsonConvert.DeserializeObject<Dictionary<string, Vector2>>(dictionary["data"].ToString());
+                    webMessageReceivedEvent.Set(tmp.id, tmp.message, positions);
+                }
+                else
+                {
+                    data = tmp;
+                    webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
+                }
+
+                GameManager.Instance.Events.FireEvent(typeof(WebMessageReceivedEvent));
+            }
         };
-        WebSocket.Connect();
+        await ws.Connect();
+    }
+
+    async void SendMapData(string id)
+    {
+        Json<string> map;
+        map.id = id;
+        map.message = "map";
+
+        var positions = new Dictionary<string, string>();
+        int index = 0;
+        foreach (var (playerId, player) in GameManager.Instance.Players)
+        {
+            var transform = player.transform;
+            var playerPosition = transform.position;
+            var position = new Vector2(playerPosition.x, playerPosition.z);
+
+            positions.Add(playerId, JsonUtility.ToJson(position));
+        }
+
+        var dataString = JsonConvert.SerializeObject(positions);
+        map.data = dataString;
+        var mapString = JsonConvert.SerializeObject(map);
+        await ws.SendText(mapString);
     }
 
     private DateTime time = DateTime.Now;
     void Update()
     {
+    #if UNITY_EDITOR || UNITY_STANDALONE_LINUX
+        ws.DispatchMessageQueue();
+    #endif
         if (Input.GetMouseButtonDown((int)MouseButton.Right))
         {
-            time = DateTime.Now;
-            _json.message = "join";
-            WebSocket.Send(JsonUtility.ToJson(_json));
+            Join();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            JoinBot();
         }
     }
-
-    private Json _json;
-    public void SendMove(Vector2 movement)
+    
+    private async void JoinBot()
     {
-        _json.message = "move";
-        _json.data = movement;
-        var jsonData = JsonUtility.ToJson(_json);
-        Debug.Log("sendng: " + jsonData);
-        WebSocket.Send(jsonData);
+        Json<object> json;
+        json.id = Guid.NewGuid().ToString();
+        time = DateTime.Now;
+        json.message = "join_bot";
+        json.data = "";
+        var data = JsonUtility.ToJson(json);
+        await ws.Send(Encoding.UTF8.GetBytes(data));
     }
 
-    public struct Json
+    private async void Join()
+    {
+        Json<object> json;
+        json.id = Id;
+        time = DateTime.Now;
+        json.message = "join";
+        json.data = "";
+        var data = JsonUtility.ToJson(json);
+        await ws.Send(Encoding.UTF8.GetBytes(data));
+    }
+
+    private async void OnApplicationQuit()
+    {
+        await ws.Close();
+    }
+
+    public async void SendMove(Vector2 movement)
+    {
+        Json<Vector2> json;
+        json.id = Id;
+        json.message = "move";
+        json.data = movement;
+        var jsonData = JsonUtility.ToJson(json);
+        await ws.Send(Encoding.UTF8.GetBytes(jsonData));
+    }
+    
+    public interface IJson
+    {
+        string GetId();
+        string GetMessage();
+        object GetData();
+    }
+
+    public struct SimpleJson<T>
+    {
+        public string key;
+        public T jValue;
+    }
+
+    public struct Json<T> : IJson
     {
         public string message;
-        public Vector2 data;
+        public string id;
+        public T data;
+        public string GetMessage()
+        {
+            return message;
+        }
+
+        public string GetId()
+        {
+            return id;
+        }
+
+        public object GetData()
+        {
+            return data;
+        }
     }
 }
