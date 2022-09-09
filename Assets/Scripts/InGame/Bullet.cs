@@ -7,6 +7,8 @@ public class Bullet : MonoBehaviour, IPoolable
 {
     private Rigidbody _rigidbody;
     private readonly float _bulletSpeed = 20f;
+    
+    public bool IsMyBullet { get; set; }
 
     public event Action<Collider> OnBulletTriggerEnter; 
     
@@ -34,5 +36,6 @@ public class Bullet : MonoBehaviour, IPoolable
     {
         OnBulletTriggerEnter = null;
         gameObject.SetActive(false);
+        IsMyBullet = false;
     }
 }

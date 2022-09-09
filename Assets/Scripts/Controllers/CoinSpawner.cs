@@ -1,6 +1,5 @@
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 public class CoinSpawner : MonoBehaviour, EventListener
 {
@@ -14,6 +13,8 @@ public class CoinSpawner : MonoBehaviour, EventListener
     private int _coinCount;
     [SerializeField]private int _maxCoins;
 
+    private Dictionary<string, Coin> coins = new Dictionary<string, Coin>();
+
     private void Awake()
     {
         _coinPool = new ComponentPool<Coin>(_coinPrefab);
@@ -22,40 +23,26 @@ public class CoinSpawner : MonoBehaviour, EventListener
     private void Start()
     {
         GameManager.Instance.Events.RegisterObserver(this);
-        
-        StartCoroutine(SpawnLoop());
     }
 
-    private IEnumerator SpawnLoop()
-    {
-        while (true)
-        {
-            SpawnCoin();
-            yield return new WaitForSeconds(2);
-        }
-    }
-
-    private Vector3 RandomPosition()
-    {
-        int x = Random.Range(_minX, _maxX);
-        int z = Random.Range(_minY, _maxY);
-        return new Vector3(x, 0.5f, z);
-    }
-
-    private void SpawnCoin()
+    public void SpawnCoin(string id, Vector2 position)
     {
         if (_coinCount < _maxCoins)
         {
             _coinCount++;
-            Coin coin = _coinPool.NewItem();
-            coin.transform.position = RandomPosition();
+            var coin = _coinPool.NewItem();
+            coin.Id = id;
+            coin.transform.position = new Vector3(position.x, 0.5f, position.y);
+            
+            coins.Add(coin.Id, coin);
         }
     }
 
-    [EventHandler]
-    void OnCoinPickupEvent(PickupCoinEvent coinEvent)
+    public void CoinPickup(string id)
     {
         _coinCount--;
-        _coinPool.DestoryItem(coinEvent.Coin);
+        var coin = coins[id];
+        _coinPool.DestoryItem(coin);
+        coins.Remove(id);
     }
 }

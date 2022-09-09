@@ -16,7 +16,8 @@ public class PlayerInputHandler : MonoBehaviour
     public void Init(Vector3 position)
     {
         _playerController = Instantiate(playerPrefab, position, transform.rotation).GetComponent<PlayerController>();
-        _playerController.Init(GetComponent<PlayerInput>());
+        _playerController.Init(GetComponent<PlayerInput>(), GameManager.Instance.Network.Id);
+        _playerController.SetColor(Color.gray);
     }
 
     public void OnMove(InputAction.CallbackContext context)

@@ -12,7 +12,8 @@ public class Coin : MonoBehaviour, IPoolable
     private float _rotationSpeed = 150f;
 
     private SphereCollider _sphereCollider;
-    
+    public string Id { get; set; }
+
     void Awake()
     {
         _sphereCollider = GetComponent<SphereCollider>();
@@ -42,10 +43,7 @@ public class Coin : MonoBehaviour, IPoolable
     {
         if (other.gameObject.CompareTag("Player"))
         {
-            other.gameObject.GetComponent<PlayerController>().UpdateScore(1);
-            
-            GameManager.Instance.Events.Get<PickupCoinEvent>().Set(this);
-            GameManager.Instance.Events.FireEvent(typeof(PickupCoinEvent));
+            GameManager.Instance.Network.SendCoinPickUp(Id);
         }
     }
 
@@ -56,6 +54,7 @@ public class Coin : MonoBehaviour, IPoolable
 
     public void Free()
     {
+        Id = "";
         gameObject.SetActive(false);
     }
 }

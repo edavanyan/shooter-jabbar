@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour, EventListener
     public EventService Events { get; private set; }
     public BulletController BulletController { get; private set; }
     public Network Network { get; private set; }
+    public CoinSpawner CoinSpawner { get; private set; }
 
     [SerializeField] private LayerMask _layerMask;
     [SerializeField] private Camera _camera;
@@ -42,6 +43,7 @@ public class GameManager : MonoBehaviour, EventListener
         Events = GetComponent<EventService>();
         BulletController = GetComponent<BulletController>();
         Network = GetComponent<Network>();
+        CoinSpawner = GetComponent<CoinSpawner>();
 
         Players = new Dictionary<string, PlayerController>();
         
@@ -69,11 +71,15 @@ public class GameManager : MonoBehaviour, EventListener
         Destroy(player.gameObject);
     }
 
-    IEnumerator PositionPlayer(string id, Vector2 position)
+    IEnumerator PositionPlayer(string id, Vector2 position, bool respawn = false)
     {
         yield return new WaitForUpdate();
         
         Players[id].transform.position = new Vector3(position.x, 0.5f, position.y);
+        if (respawn)
+        {
+            Players[id].Reset();
+        }
     }
 
     IEnumerator FireBullet(string id, Vector2 position)
@@ -82,7 +88,7 @@ public class GameManager : MonoBehaviour, EventListener
         
         var playerPosition = Players[id].transform.position;
         playerPosition.y = 1.5f;
-        BulletController.Fire(playerPosition, new Vector3(position.x, 0, position.y));
+        BulletController.Fire(playerPosition, new Vector3(position.x, 0, position.y), GameManager.Instance.Network.Id == id);
     }
 
     IEnumerator JoinPlayer(string id, Vector2 position)
@@ -98,16 +104,33 @@ public class GameManager : MonoBehaviour, EventListener
             playerInputHandler.Init(spawnPoint);
 
             playerController = playerInputHandler.PlayerController;
+            playerController.SyncedPosition = spawnPoint;
         }
         else
         {
             playerController = Instantiate(_playerPrefab, spawnPoint, Quaternion.identity).GetComponent<PlayerController>();
+            playerController.SyncedPosition = spawnPoint;
+            playerController.Init(id);
         }
 
         Players.Add(id, playerController);
         
         Events.Get<PlayerJoinedEvent>().Set(playerController, isMyMessage);
         Events.FireEvent(typeof(PlayerJoinedEvent));
+    }
+
+    private IEnumerator SpawnCoin(string id, Vector2 position)
+    {
+        yield return new WaitForUpdate();
+
+        CoinSpawner.SpawnCoin(id, position);
+    }
+
+    private IEnumerator CoinPickup(string id)
+    {
+        yield return new WaitForUpdate();
+
+        CoinSpawner.CoinPickup(id);
     }
 
     private void Update()
@@ -166,6 +189,42 @@ public class GameManager : MonoBehaviour, EventListener
         if (messageReceivedEvent.Message == "fire")
         {
             StartCoroutine(FireBullet(messageReceivedEvent.Id, (Vector2)messageReceivedEvent.Data));
+        }
+        
+        if (messageReceivedEvent.Message == "bullet_hit")
+        {
+            Players[messageReceivedEvent.Data.ToString()].Damage(messageReceivedEvent.Id);
+        }
+        
+        if (messageReceivedEvent.Message == "sync_position")
+        {
+            var position = (Vector2)messageReceivedEvent.Data;
+            Vector3 syncPosition = new Vector3(position.x, 0.5f, position.y);
+            Players[messageReceivedEvent.Id].SyncedPosition = syncPosition;
+        }
+        
+        if (messageReceivedEvent.Message == "respawn")
+        {
+            StartCoroutine(PositionPlayer(messageReceivedEvent.Id, (Vector2)messageReceivedEvent.Data, true));
+        }
+        
+        if (messageReceivedEvent.Message == "fire")
+        {
+            StartCoroutine(FireBullet(messageReceivedEvent.Id, (Vector2)messageReceivedEvent.Data));
+        }
+        
+        if (messageReceivedEvent.Message == "coin_pick")
+        {
+            StartCoroutine(CoinPickup(messageReceivedEvent.Data.ToString()));
+        }
+        
+        if (messageReceivedEvent.Message == "spawn_coin")
+        {
+            var coinData = (Dictionary<string, Vector2>)messageReceivedEvent.Data;
+            foreach (var (id, position) in coinData)
+            {
+                StartCoroutine(SpawnCoin(id, position));
+            }
         }
 
         if (messageReceivedEvent.Message == "disconnect")

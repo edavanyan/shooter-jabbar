@@ -14,19 +14,34 @@ public class BulletController : MonoBehaviour
         _bulletPool = new ComponentPool<Bullet>(_bulletPrefab);
     }
 
-    public void Fire(Vector3 position, Vector3 direction)
+    public void Fire(Vector3 position, Vector3 direction, bool isMyBullet)
     {
         var bullet = _bulletPool.NewItem();
         bullet.transform.position = position;
+        bullet.IsMyBullet = isMyBullet;
         bullet.OnBulletTriggerEnter += col =>
         {
+            if (col.gameObject.CompareTag("Player"))
+            {
+                var playerController = col.GetComponent<PlayerController>();
+                if (playerController.IsMyPlayer != bullet.IsMyBullet)
+                {
+                    playerController.BulletHit(bullet);
+                    DestroyBullet(bullet);
+                }
+            }
             if (col.gameObject.CompareTag("Wall"))
             {
-                _bulletPool.DestoryItem(bullet);
-                _bullets.Remove(bullet);
+                DestroyBullet(bullet);
             }
         };
         _bullets.Add(bullet, direction);
+    }
+
+    private void DestroyBullet(Bullet bullet)
+    {
+        _bulletPool.DestoryItem(bullet);
+        _bullets.Remove(bullet);
     }
     
     void FixedUpdate()

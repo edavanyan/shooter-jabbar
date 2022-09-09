@@ -17,20 +17,20 @@ public class UIManager : MonoBehaviour, EventListener
         _playerPanelPool = new ComponentPool<PlayerUIPanel>(_playerUIPanelPrefab, transform);
     }
 
-    [EventHandler]
-    void OnPlayerJoined(PlayerJoinedEvent playerJoinedEvent)
-    {
-        var playerUIPanel = _playerPanelPool.NewItem();
-        playerUIPanel.Set(playerJoinedEvent.Player);
-        playerPanels.Add(playerJoinedEvent.Player, playerUIPanel);
-    }
-
-    [EventHandler]
-    void OnPlayerLeft(PlayerLeftEvent playerLeftEvent)
-    {
-        _playerPanelPool.DestoryItem(playerPanels[playerLeftEvent.Player]);
-        playerPanels.Remove(playerLeftEvent.Player);
-    }
+    // [EventHandler]
+    // void OnPlayerJoined(PlayerJoinedEvent playerJoinedEvent)
+    // {
+    //     var playerUIPanel = _playerPanelPool.NewItem();
+    //     playerUIPanel.Set(playerJoinedEvent.Player);
+    //     playerPanels.Add(playerJoinedEvent.Player, playerUIPanel);
+    // }
+    //
+    // [EventHandler]
+    // void OnPlayerLeft(PlayerLeftEvent playerLeftEvent)
+    // {
+    //     _playerPanelPool.DestoryItem(playerPanels[playerLeftEvent.Player]);
+    //     playerPanels.Remove(playerLeftEvent.Player);
+    // }
     
     [EventHandler]
     void OnScoreUpdate(ScoreUpdatedEvent scoreUpdatedEvent)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using NativeWebSocket;
 using Newtonsoft.Json;
@@ -22,15 +23,12 @@ public class Network : MonoBehaviour
         private set;
     }
 
-#if UNITY_EDITOR
-    private const string url = "ws://localhost:8080";
-#else
-    private const string url = "wss://shooter-jabbar.herokuapp.com";
-#endif
-    
+    [SerializeField] private URL url;
+
+
     async void Start()
     {
-        ws = WebSocketFactory.CreateInstance(url);
+        ws = WebSocketFactory.CreateInstance(url.GetStringValue());
         
         Id = Guid.NewGuid().ToString();
         ws.OnMessage += (message) =>
@@ -45,7 +43,11 @@ public class Network : MonoBehaviour
             {
                 IJson data;
                 var webMessageReceivedEvent = GameManager.Instance.Events.Get<WebMessageReceivedEvent>();
-                if (tmp.message == "move" || tmp.message == "join" || tmp.message == "fire")
+                if (tmp.message == "move" || 
+                    tmp.message == "join" || 
+                    tmp.message == "fire" ||
+                    tmp.message == "sync_position" ||
+                    tmp.message == "respawn")
                 {
                     data = JsonUtility.FromJson<Json<Vector2>>(json);
                     webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
@@ -56,6 +58,17 @@ public class Network : MonoBehaviour
                     var positions =
                         JsonConvert.DeserializeObject<Dictionary<string, Vector2>>(dictionary["data"].ToString());
                     webMessageReceivedEvent.Set(tmp.id, tmp.message, positions);
+                }
+                else if (tmp.message == "spawn_coin")
+                {
+                    var coinData = JsonConvert.DeserializeObject<Json<Dictionary<string, Vector2>>>(json);
+                    webMessageReceivedEvent.Set(tmp.id, tmp.message, coinData.data);
+                }
+                else if (tmp.message == "bullet_hit" ||
+                         tmp.message == "coin_pick")
+                {
+                    data = JsonUtility.FromJson<Json<string>>(json);
+                    webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
                 }
                 else
                 {
@@ -87,6 +100,7 @@ public class Network : MonoBehaviour
     async void GetMapData()
     {
         if (!IsConnected) return;
+        Debug.Log("get_map");
         Json<string> data;
         data.id = Id;
         data.message = "get_map";
@@ -159,12 +173,6 @@ public class Network : MonoBehaviour
         await ws.Send(Encoding.UTF8.GetBytes(data));
     }
 
-    private async void OnApplicationQuit()
-    {
-        if (!IsConnected) return;
-        await ws.Close();
-    }
-
     public async void SendMove(Vector2 movement)
     {
         if (!IsConnected) return;
@@ -184,6 +192,53 @@ public class Network : MonoBehaviour
         data.message = "fire";
         data.data = direction;
         await ws.SendText(JsonUtility.ToJson(data));
+    }
+
+    public async void SendCoinPickUp(string coinId)
+    {
+        if (!IsConnected) return;
+        Json<string> data;
+        data.id = Id;
+        data.message = "coin_pick";
+        data.data = coinId;
+        await ws.SendText(JsonUtility.ToJson(data));
+    }
+    
+    public async void SendBulletHit(string victimId)
+    {
+        if (!IsConnected) return;
+        Json<string> data;
+        data.id = Id;
+        data.message = "bullet_hit";
+        data.data = victimId;
+        await ws.SendText(JsonUtility.ToJson(data));
+    }
+
+    public async void SendPlayerRespawn(string id)
+    {
+        if (!IsConnected) return;
+        Json<string> data;
+        data.id = id;
+        data.message = "respawn";
+        data.data = "";
+        await ws.SendText(JsonUtility.ToJson(data));
+    }
+
+    public async void SendPosition(string id, Vector2 position)
+    {
+        if (!IsConnected) return;
+        Json<Vector2> data;
+        data.id = id;
+        data.message = "sync_position";
+        data.data = position;
+        await ws.SendText(JsonUtility.ToJson(data));
+        
+    }
+
+    private async void OnApplicationQuit()
+    {
+        if (!IsConnected) return;
+        await ws.Close();
     }
     
     public interface IJson
@@ -212,5 +267,12 @@ public class Network : MonoBehaviour
         {
             return data;
         }
+    }
+    public enum URL : int
+    {
+        [StringValue("ws://localhost:8080")]
+        Local,
+        [StringValue("wss://shooter-jabbar.herokuapp.com")]
+        Server
     }
 }
