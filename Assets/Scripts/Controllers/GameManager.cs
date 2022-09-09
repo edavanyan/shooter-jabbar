@@ -17,6 +17,8 @@ public class GameManager : MonoBehaviour, EventListener
     {
         get { return Players[Network.Id]; }
     }
+
+    public bool IsInGameRoom => Players.ContainsKey(Network.Id);
     public EventService Events { get; private set; }
     public BulletController BulletController { get; private set; }
     public Network Network { get; private set; }

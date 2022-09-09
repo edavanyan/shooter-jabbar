@@ -22,7 +22,7 @@ public class Network : MonoBehaviour
         private set;
     }
 
-#if !UNITY_EDITOR
+#if UNITY_EDITOR
     private const string url = "ws://localhost:8080";
 #else
     private const string url = "wss://shooter-jabbar.herokuapp.com";
@@ -86,6 +86,7 @@ public class Network : MonoBehaviour
 
     async void GetMapData()
     {
+        if (!IsConnected) return;
         Json<string> data;
         data.id = Id;
         data.message = "get_map";
@@ -123,17 +124,22 @@ public class Network : MonoBehaviour
     #endif
         if (Input.GetMouseButtonDown((int)MouseButton.Right))
         {
-            Join();
+            if (!GameManager.Instance.IsInGameRoom)
+            {
+                Join();
+            }
         }
-
+#if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.Space))
         {
             JoinBot();
         }
+#endif
     }
     
     private async void JoinBot()
     {
+        if (!IsConnected) return;
         Json<object> json;
         json.id = Guid.NewGuid().ToString();
         json.message = "join_bot";
@@ -144,6 +150,7 @@ public class Network : MonoBehaviour
 
     private async void Join()
     {
+        if (!IsConnected) return;
         Json<object> json;
         json.id = Id;
         json.message = "join";
@@ -154,11 +161,13 @@ public class Network : MonoBehaviour
 
     private async void OnApplicationQuit()
     {
+        if (!IsConnected) return;
         await ws.Close();
     }
 
     public async void SendMove(Vector2 movement)
     {
+        if (!IsConnected) return;
         Json<Vector2> json;
         json.id = Id;
         json.message = "move";
@@ -169,6 +178,7 @@ public class Network : MonoBehaviour
 
     public async void SendFire(Vector2 direction)
     {
+        if (!IsConnected) return;
         Json<Vector2> data;
         data.id = Id;
         data.message = "fire";
