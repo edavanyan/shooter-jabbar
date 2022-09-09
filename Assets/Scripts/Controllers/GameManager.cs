@@ -172,8 +172,9 @@ public class GameManager : MonoBehaviour, EventListener
         
         if (messageReceivedEvent.Message == "map")
         {
-            var data = (Dictionary<string, Vector2>)messageReceivedEvent.Data;
-            foreach (var (id, position) in data)
+            var data = (Dictionary<string, Dictionary<string, Vector2>>)messageReceivedEvent.Data;
+            var dict = data["players"];
+            foreach (var (id, position) in dict)
             {
                 if (!Players.ContainsKey(id))
                 {
@@ -182,6 +183,14 @@ public class GameManager : MonoBehaviour, EventListener
                 else
                 {
                     StartCoroutine(PositionPlayer(id, position));
+                }
+            }
+            dict = data["coins"];
+            foreach (var (id, position) in dict)
+            {
+                if (!CoinSpawner.ContainsCoin(id))
+                {
+                    StartCoroutine(SpawnCoin(id, position));
                 }
             }
         }

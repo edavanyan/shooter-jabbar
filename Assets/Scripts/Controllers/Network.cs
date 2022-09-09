@@ -43,8 +43,8 @@ public class Network : MonoBehaviour
             {
                 IJson data;
                 var webMessageReceivedEvent = GameManager.Instance.Events.Get<WebMessageReceivedEvent>();
-                if (tmp.message == "move" || 
-                    tmp.message == "join" || 
+                if (tmp.message == "move" ||
+                    tmp.message == "join" ||
                     tmp.message == "fire" ||
                     tmp.message == "sync_position" ||
                     tmp.message == "respawn")
@@ -54,10 +54,10 @@ public class Network : MonoBehaviour
                 }
                 else if (tmp.message == "map")
                 {
-                    var dictionary = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-                    var positions =
-                        JsonConvert.DeserializeObject<Dictionary<string, Vector2>>(dictionary["data"].ToString());
-                    webMessageReceivedEvent.Set(tmp.id, tmp.message, positions);
+                    var dataDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    var dictionary =
+                        JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Vector2>>>(dataDict["data"].ToString());
+                    webMessageReceivedEvent.Set(tmp.id, tmp.message, dictionary);
                 }
                 else if (tmp.message == "spawn_coin")
                 {
@@ -110,6 +110,7 @@ public class Network : MonoBehaviour
 
     async void SendMapData(string id)
     {
+        if (!IsConnected) return;
         Json<string> map;
         map.id = id;
         map.message = "map";

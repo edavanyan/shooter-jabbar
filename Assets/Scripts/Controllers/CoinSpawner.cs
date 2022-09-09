@@ -25,24 +25,35 @@ public class CoinSpawner : MonoBehaviour, EventListener
         GameManager.Instance.Events.RegisterObserver(this);
     }
 
+    public bool ContainsCoin(string id)
+    {
+        return coins.ContainsKey(id);
+    }
+
     public void SpawnCoin(string id, Vector2 position)
     {
         if (_coinCount < _maxCoins)
         {
-            _coinCount++;
-            var coin = _coinPool.NewItem();
-            coin.Id = id;
-            coin.transform.position = new Vector3(position.x, 0.5f, position.y);
-            
-            coins.Add(coin.Id, coin);
+            if (!coins.ContainsKey(id))
+            {
+                _coinCount++;
+                var coin = _coinPool.NewItem();
+                coin.Id = id;
+                coin.transform.position = new Vector3(position.x, 0.5f, position.y);
+
+                coins.Add(coin.Id, coin);
+            }
         }
     }
 
     public void CoinPickup(string id)
     {
-        _coinCount--;
-        var coin = coins[id];
-        _coinPool.DestoryItem(coin);
-        coins.Remove(id);
+        if (coins.ContainsKey(id))
+        {
+            _coinCount--;
+            var coin = coins[id];
+            _coinPool.DestoryItem(coin);
+            coins.Remove(id);
+        }
     }
 }
