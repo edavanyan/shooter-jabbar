@@ -18,17 +18,16 @@ public class BulletController : MonoBehaviour
     {
         var bullet = _bulletPool.NewItem();
         bullet.transform.position = position;
-        bullet.IsMyBullet = isMyBullet;
         bullet.OnBulletTriggerEnter += col =>
         {
             if (col.gameObject.CompareTag("Player"))
             {
                 var playerController = col.GetComponent<PlayerController>();
-                if (playerController.IsMyPlayer != bullet.IsMyBullet)
-                {
+                // if (playerController.IsMyPlayer != bullet.IsMyBullet)
+                // {
                     playerController.BulletHit(bullet);
                     DestroyBullet(bullet);
-                }
+                // }
             }
             if (col.gameObject.CompareTag("Wall"))
             {

@@ -12,7 +12,7 @@ public class UIManager : MonoBehaviour, EventListener
         playerPanels = new Dictionary<PlayerController, PlayerUIPanel>();
     private void Start()
     {
-        GameManager.Instance.Events.RegisterObserver(this);
+        OldGameManager.Instance.Events.RegisterObserver(this);
 
         _playerPanelPool = new ComponentPool<PlayerUIPanel>(_playerUIPanelPrefab, transform);
     }

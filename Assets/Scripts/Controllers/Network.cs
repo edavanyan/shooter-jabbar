@@ -10,31 +10,28 @@ using UnityEngine.InputSystem.LowLevel;
 public class Network : MonoBehaviour
 {
     private WebSocket ws;
+    private ConnectionStatus _connectionStatus = ConnectionStatus.Disconnected;
 
-    internal bool IsConnected
+    private enum ConnectionStatus
     {
-        get;
-        private set;
+        Connected,
+        Connecting,
+        Disconnected
     }
+    public string Id { get; private set; }
 
-    public string Id
-    {
-        get;
-        private set;
-    }
-
-    [SerializeField] private URL url;
+    [SerializeField] private NetwrokManager.URL url;
 
 
-    async void Start()
+    async void Awake()
     {
         ws = WebSocketFactory.CreateInstance(url.GetStringValue());
-        
+
         Id = Guid.NewGuid().ToString();
         ws.OnMessage += (message) =>
         {
             var json = Encoding.UTF8.GetString(message);
-            var tmp = JsonUtility.FromJson<Json<object>>(json);
+            var tmp = JsonUtility.FromJson<Jsonold<object>>(json);
             if (tmp.message == "get_map")
             {
                 SendMapData(tmp.id);
@@ -42,32 +39,38 @@ public class Network : MonoBehaviour
             else
             {
                 IJson data;
-                var webMessageReceivedEvent = GameManager.Instance.Events.Get<WebMessageReceivedEvent>();
+                var webMessageReceivedEvent = OldGameManager.Instance.Events.Get<WebMessageReceivedEvent>();
+                if (tmp.message == "join" && tmp.id == Id)
+                {
+                    _connectionStatus = ConnectionStatus.Connected;
+                }
+
                 if (tmp.message == "move" ||
                     tmp.message == "join" ||
                     tmp.message == "fire" ||
                     tmp.message == "sync_position" ||
                     tmp.message == "respawn")
                 {
-                    data = JsonUtility.FromJson<Json<Vector2>>(json);
+                    data = JsonUtility.FromJson<Jsonold<Vector2>>(json);
                     webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
                 }
                 else if (tmp.message == "map")
                 {
                     var dataDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
                     var dictionary =
-                        JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Vector2>>>(dataDict["data"].ToString());
+                        JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, Vector2>>>(dataDict["data"]
+                            .ToString());
                     webMessageReceivedEvent.Set(tmp.id, tmp.message, dictionary);
                 }
                 else if (tmp.message == "spawn_coin")
                 {
-                    var coinData = JsonConvert.DeserializeObject<Json<Dictionary<string, Vector2>>>(json);
+                    var coinData = JsonConvert.DeserializeObject<Jsonold<Dictionary<string, Vector2>>>(json);
                     webMessageReceivedEvent.Set(tmp.id, tmp.message, coinData.data);
                 }
                 else if (tmp.message == "bullet_hit" ||
                          tmp.message == "coin_pick")
                 {
-                    data = JsonUtility.FromJson<Json<string>>(json);
+                    data = JsonUtility.FromJson<Jsonold<string>>(json);
                     webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
                 }
                 else
@@ -76,48 +79,75 @@ public class Network : MonoBehaviour
                     webMessageReceivedEvent.Set(data.GetId(), data.GetMessage(), data.GetData());
                 }
 
-                GameManager.Instance.Events.FireEvent(typeof(WebMessageReceivedEvent));
+                OldGameManager.Instance.Events.FireEvent(typeof(WebMessageReceivedEvent));
             }
         };
 
-        ws.OnOpen += () =>
-        {
-            IsConnected = true;
-            Debug.Log("Connecting with: " + Id);
-        };
-        
+        ws.OnOpen += () => { Debug.Log("Connecting with: " + Id); };
+
         await ws.Connect();
     }
 
     private void OnApplicationFocus(bool hasFocus)
     {
-        if (IsConnected && hasFocus)
+        if (hasFocus &&
+            _connectionStatus == ConnectionStatus.Connected)
         {
             GetMapData();
         }
     }
 
-    async void GetMapData()
+    void Update()
     {
-        if (!IsConnected) return;
-        Debug.Log("get_map");
-        Json<string> data;
+#if UNITY_EDITOR || UNITY_STANDALONE_LINUX
+        if (ws.State == WebSocketState.Open)
+        {
+            ws.DispatchMessageQueue();
+        }
+#endif
+        if (Input.GetMouseButtonDown((int)MouseButton.Right))
+        {
+            if (!OldGameManager.Instance.IsInGameRoom)
+            {
+                if (_connectionStatus == ConnectionStatus.Disconnected)
+                {
+                    Join();
+                }
+            }
+        }
+#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            JoinBot();
+        }
+#endif
+    }
+
+    async void SendText(string data)
+    {
+        if (ws.State == WebSocketState.Open)
+        {
+            await ws.SendText(data);
+        }
+    }
+
+    void GetMapData()
+    {
+        Jsonold<string> data;
         data.id = Id;
         data.message = "get_map";
         data.data = "";
-        await ws.SendText(JsonUtility.ToJson(data));
+        SendText(JsonUtility.ToJson(data));
     }
 
-    async void SendMapData(string id)
+    void SendMapData(string id)
     {
-        if (!IsConnected) return;
-        Json<string> map;
+        Jsonold<string> map;
         map.id = id;
         map.message = "map";
 
         var positions = new Dictionary<string, string>();
-        int index = 0;
-        foreach (var (playerId, player) in GameManager.Instance.Players)
+        foreach (var (playerId, player) in OldGameManager.Instance.Players)
         {
             var transform = player.transform;
             var playerPosition = transform.position;
@@ -129,119 +159,94 @@ public class Network : MonoBehaviour
         var dataString = JsonConvert.SerializeObject(positions);
         map.data = dataString;
         var mapString = JsonConvert.SerializeObject(map);
-        await ws.SendText(mapString);
+        SendText(mapString);
     }
 
-    void Update()
+    private void JoinBot()
     {
-    #if UNITY_EDITOR || UNITY_STANDALONE_LINUX
-        ws.DispatchMessageQueue();
-    #endif
-        if (Input.GetMouseButtonDown((int)MouseButton.Right))
-        {
-            if (!GameManager.Instance.IsInGameRoom)
-            {
-                Join();
-            }
-        }
-#if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            JoinBot();
-        }
-#endif
-    }
-    
-    private async void JoinBot()
-    {
-        if (!IsConnected) return;
-        Json<object> json;
-        json.id = Guid.NewGuid().ToString();
-        json.message = "join_bot";
-        json.data = "";
-        var data = JsonUtility.ToJson(json);
-        await ws.Send(Encoding.UTF8.GetBytes(data));
+        Jsonold<object> jsonold;
+        jsonold.id = Guid.NewGuid().ToString();
+        jsonold.message = "join_bot";
+        jsonold.data = "";
+        var data = JsonUtility.ToJson(jsonold);
+        SendText(data);
     }
 
-    private async void Join()
+    private void Join()
     {
-        if (!IsConnected) return;
-        Json<object> json;
-        json.id = Id;
-        json.message = "join";
-        json.data = "";
-        var data = JsonUtility.ToJson(json);
-        await ws.Send(Encoding.UTF8.GetBytes(data));
+        _connectionStatus = ConnectionStatus.Connecting;
+        Jsonold<object> jsonold;
+        jsonold.id = Id;
+        jsonold.message = "join";
+        jsonold.data = "";
+        var data = JsonUtility.ToJson(jsonold);
+        SendText(data);
     }
 
-    public async void SendMove(Vector2 movement)
+    public void SendMove(Vector2 movement)
     {
-        if (!IsConnected) return;
-        Json<Vector2> json;
-        json.id = Id;
-        json.message = "move";
-        json.data = movement;
-        var jsonData = JsonUtility.ToJson(json);
-        await ws.Send(Encoding.UTF8.GetBytes(jsonData));
+        Jsonold<Vector2> jsonold;
+        jsonold.id = Id;
+        jsonold.message = "move";
+        jsonold.data = movement;
+        var jsonData = JsonUtility.ToJson(jsonold);
+        SendText(jsonData);
     }
 
-    public async void SendFire(Vector2 direction)
+    public void SendFire(Vector2 direction)
     {
-        if (!IsConnected) return;
-        Json<Vector2> data;
+        Jsonold<Vector2> data;
         data.id = Id;
         data.message = "fire";
         data.data = direction;
-        await ws.SendText(JsonUtility.ToJson(data));
+        SendText(JsonUtility.ToJson(data));
     }
 
-    public async void SendCoinPickUp(string coinId)
+    public void SendCoinPickUp(string coinId)
     {
-        if (!IsConnected) return;
-        Json<string> data;
+        Jsonold<string> data;
         data.id = Id;
         data.message = "coin_pick";
         data.data = coinId;
-        await ws.SendText(JsonUtility.ToJson(data));
+        SendText(JsonUtility.ToJson(data));
     }
-    
-    public async void SendBulletHit(string victimId)
+
+    public void SendBulletHit(string victimId)
     {
-        if (!IsConnected) return;
-        Json<string> data;
+        Jsonold<string> data;
         data.id = Id;
         data.message = "bullet_hit";
         data.data = victimId;
-        await ws.SendText(JsonUtility.ToJson(data));
+        SendText(JsonUtility.ToJson(data));
     }
 
-    public async void SendPlayerRespawn(string id)
+    public void SendPlayerRespawn(string id)
     {
-        if (!IsConnected) return;
-        Json<string> data;
+        Jsonold<string> data;
         data.id = id;
         data.message = "respawn";
         data.data = "";
-        await ws.SendText(JsonUtility.ToJson(data));
+        SendText(JsonUtility.ToJson(data));
     }
 
-    public async void SendPosition(string id, Vector2 position)
+    public void SendPosition(string id, Vector2 position)
     {
-        if (!IsConnected) return;
-        Json<Vector2> data;
+        Jsonold<Vector2> data;
         data.id = id;
         data.message = "sync_position";
         data.data = position;
-        await ws.SendText(JsonUtility.ToJson(data));
-        
+        SendText(JsonUtility.ToJson(data));
+
     }
 
     private async void OnApplicationQuit()
     {
-        if (!IsConnected) return;
-        await ws.Close();
+        if (ws.State == WebSocketState.Open)
+        {
+            await ws.Close();
+        }
     }
-    
+
     public interface IJson
     {
         string GetId();
@@ -249,11 +254,12 @@ public class Network : MonoBehaviour
         object GetData();
     }
 
-    public struct Json<T> : IJson
+    public struct Jsonold<T> : IJson
     {
         public string message;
         public string id;
         public T data;
+
         public string GetMessage()
         {
             return message;
@@ -268,12 +274,5 @@ public class Network : MonoBehaviour
         {
             return data;
         }
-    }
-    public enum URL : int
-    {
-        [StringValue("ws://localhost:8080")]
-        Local,
-        [StringValue("wss://shooter-jabbar.herokuapp.com")]
-        Server
     }
 }

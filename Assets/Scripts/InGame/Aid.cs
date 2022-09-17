@@ -6,32 +6,27 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 [RequireComponent(typeof(SphereCollider))]
-public class Coin : MonoBehaviour, IPoolable
+public class Aid : MonoBehaviour, IPoolable
 {
-    private float _pickUpRadius = 1.5f;
-    private float _rotationSpeed = 150f;
+    private float pickUpRadius = 1.5f;
+    private float rotationSpeed = 150f;
 
     private SphereCollider _sphereCollider;
     public string Id { get; set; }
+    public event Action<string, string> OnAidCollision;
 
     void Awake()
     {
         _sphereCollider = GetComponent<SphereCollider>();
         _sphereCollider.isTrigger = true;
-        _sphereCollider.radius = _pickUpRadius;
+        _sphereCollider.radius = pickUpRadius;
 
-        _rotationSpeed += Random.Range(-25, 25);
+        rotationSpeed += Random.Range(-25, 25);
     }
 
     void Update()
     {
-        transform.Rotate(Vector3.up * (_rotationSpeed * Time.deltaTime));
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, _pickUpRadius);
+        transform.Rotate(Vector3.up * (rotationSpeed * Time.deltaTime));
     }
 
     private void OnTriggerEnter(Collider other)
@@ -43,7 +38,7 @@ public class Coin : MonoBehaviour, IPoolable
     {
         if (other.gameObject.CompareTag("Player"))
         {
-            GameManager.Instance.Network.SendCoinPickUp(Id);
+            OnAidCollision?.Invoke(other.GetComponent<Character>().Id, Id);
         }
     }
 
@@ -54,6 +49,7 @@ public class Coin : MonoBehaviour, IPoolable
 
     public void Free()
     {
+        OnAidCollision = null;
         Id = "";
         gameObject.SetActive(false);
     }

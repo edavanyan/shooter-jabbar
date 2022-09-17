@@ -4,8 +4,8 @@ using UnityEngine;
 public class CoinSpawner : MonoBehaviour, EventListener
 {
     [SerializeField]
-    Coin _coinPrefab;
-    private ComponentPool<Coin> _coinPool;
+    Aid _coinPrefab;
+    private ComponentPool<Aid> _coinPool;
 
     private int _minX = -11, _maxX = 11;
     private int _minY = -11, _maxY = 11;
@@ -13,16 +13,16 @@ public class CoinSpawner : MonoBehaviour, EventListener
     private int _coinCount;
     [SerializeField]private int _maxCoins;
 
-    private Dictionary<string, Coin> coins = new Dictionary<string, Coin>();
+    private Dictionary<string, Aid> coins = new Dictionary<string, Aid>();
 
     private void Awake()
     {
-        _coinPool = new ComponentPool<Coin>(_coinPrefab);
+        _coinPool = new ComponentPool<Aid>(_coinPrefab);
     }
 
     private void Start()
     {
-        GameManager.Instance.Events.RegisterObserver(this);
+        OldGameManager.Instance.Events.RegisterObserver(this);
     }
 
     public bool ContainsCoin(string id)

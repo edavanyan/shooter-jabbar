@@ -22,7 +22,9 @@ public abstract class Pool<T> where T : IPoolable
             return item;
         }
 
-        return CreateItem(_prototype);
+        var newItem = CreateItem(_prototype);
+        newItem.New();
+        return newItem;
     }
 
     protected abstract T CreateItem(T prototype);

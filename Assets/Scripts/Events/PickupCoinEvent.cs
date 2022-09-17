@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class PickupCoinEvent : Event
 {
-    public Coin Coin { get; private set; }
+    public Aid Coin { get; private set; }
 
-    public void Set(Coin coin)
+    public void Set(Aid coin)
     {
         Coin = coin;
     }

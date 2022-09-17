@@ -5,9 +5,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 
-public class GameManager : MonoBehaviour, EventListener
+public class OldGameManager : MonoBehaviour, EventListener
 {
-    public static GameManager Instance { get; private set; }
+    public static OldGameManager Instance { get; private set; }
     [SerializeField] private PlayerInput _playerInputPrefab;
     [SerializeField] private PlayerController _playerPrefab;
     public GameObject[] SpawnPoints { get; private set; }
@@ -75,10 +75,10 @@ public class GameManager : MonoBehaviour, EventListener
     {
         yield return new WaitForUpdate();
         
-        Players[id].transform.position = new Vector3(position.x, 0.5f, position.y);
+        Players[id].SetPosition(new Vector3(position.x, 0.5f, position.y));
         if (respawn)
         {
-            Players[id].Reset();
+            // Players[id].Reset();
         }
     }
 
@@ -88,7 +88,7 @@ public class GameManager : MonoBehaviour, EventListener
         
         var playerPosition = Players[id].transform.position;
         playerPosition.y = 1.5f;
-        BulletController.Fire(playerPosition, new Vector3(position.x, 0, position.y), GameManager.Instance.Network.Id == id);
+        BulletController.Fire(playerPosition, new Vector3(position.x, 0, position.y), OldGameManager.Instance.Network.Id == id);
     }
 
     IEnumerator JoinPlayer(string id, Vector2 position)
@@ -101,15 +101,15 @@ public class GameManager : MonoBehaviour, EventListener
         if (isMyMessage)
         {
             var playerInputHandler = Instantiate(_playerInputPrefab).GetComponent<PlayerInputHandler>();
-            playerInputHandler.Init(spawnPoint);
+            // playerInputHandler.Init(spawnPoint);
 
             playerController = playerInputHandler.PlayerController;
-            playerController.SyncedPosition = spawnPoint;
+            playerController.SetPosition(spawnPoint);
         }
         else
         {
             playerController = Instantiate(_playerPrefab, spawnPoint, Quaternion.identity).GetComponent<PlayerController>();
-            playerController.SyncedPosition = spawnPoint;
+            playerController.SetPosition(spawnPoint);
             playerController.Init(id);
         }
 
@@ -131,26 +131,6 @@ public class GameManager : MonoBehaviour, EventListener
         yield return new WaitForUpdate();
 
         CoinSpawner.CoinPickup(id);
-    }
-
-    private void Update()
-    {
-        if (Input.GetMouseButtonDown((int)MouseButton.Left))
-        {
-            var touchPosition = Input.mousePosition;
-            var ray = _camera.ScreenPointToRay(touchPosition);
-            if (Physics.Raycast(ray, out var hit, _layerMask))
-            {
-                var playerPosition = Player.transform.position;
-                playerPosition.y = 1.5f;
-                var hitPoint = hit.point;
-                hitPoint.y = 1.5f;
-                var direction = hitPoint - playerPosition;
-                direction = direction.normalized;
-
-                Network.SendFire(new Vector2(direction.x, direction.z));
-            }
-        }
     }
 
     [EventHandler]
@@ -207,9 +187,7 @@ public class GameManager : MonoBehaviour, EventListener
         
         if (messageReceivedEvent.Message == "sync_position")
         {
-            var position = (Vector2)messageReceivedEvent.Data;
-            Vector3 syncPosition = new Vector3(position.x, 0.5f, position.y);
-            Players[messageReceivedEvent.Id].SyncedPosition = syncPosition;
+            StartCoroutine(PositionPlayer(messageReceivedEvent.Id, (Vector2)messageReceivedEvent.Data));
         }
         
         if (messageReceivedEvent.Message == "respawn")
