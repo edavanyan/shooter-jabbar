@@ -7,7 +7,7 @@ public interface ICharacterManager
 {
     event Action<string, Vector2> OnPositionSync;
     event Action<string, string> OnCharacterDie;
-    event Action OnCharacterRespawn;
+    event Action<string> OnCharacterRespawn;
     void BulletCollision(string uid, string killerId);
     void AidCollision(string uid);
     void OnMoveInput(string uid, Vector3 motion);

@@ -142,7 +142,6 @@ public class Character : MonoBehaviour, ICharacter
         if (characterHealth.Health <= 0)
         {
             OnDie(id, uid);
-            // Hide();
         }
     }
 }

@@ -14,7 +14,7 @@ public interface INetworkManager
     void SendMessageMove(Vector2 direction);
     void SendMessageAidClaim(string aidId);
     void SendMessageCharacterDie(string uid);
-    void SendMessageCharacterRespawn();
+    void SendMessageCharacterRespawn(string uid);
     void SendMessageBulletHit(string bulletId);
     void SendMessageSyncPosition(Vector2 position);
     void SendMessageMapData(string receiverId, Dictionary<string,CharacterData> charactersData);

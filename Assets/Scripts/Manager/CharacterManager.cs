@@ -11,7 +11,7 @@ public class CharacterManager : MonoBehaviour, ICharacterManager
     private readonly Dictionary<string, ICharacter> charactersById = new Dictionary<string, ICharacter>();
 
     public event Action<string, string> OnCharacterDie;
-    public event Action OnCharacterRespawn;
+    public event Action<string> OnCharacterRespawn;
     public event Action<string, Vector2> OnPositionSync;
 
     public void SpawnCharacter(string uid, Vector3 spawnPosition)
@@ -50,16 +50,16 @@ public class CharacterManager : MonoBehaviour, ICharacterManager
             character.Hide();
             if (uid == GameManager.Instance.UserId || uid == GameManager.Instance.BotId)
             {
-                StartCoroutine(SendRespawnMessage());
+                StartCoroutine(SendRespawnMessage(uid));
             }
         }
     }
 
-    private IEnumerator SendRespawnMessage()
+    private IEnumerator SendRespawnMessage(string uid)
     {
         yield return new WaitForSeconds(1);
 
-        OnCharacterRespawn();
+        OnCharacterRespawn(uid);
     }
 
     Dictionary<string, CharacterData> tmpCharacterPositions = new Dictionary<string, CharacterData>();

@@ -117,12 +117,11 @@ public class NetwrokManager : MonoBehaviour, INetworkManager
         SendJson(die);
     }
 
-    public void SendMessageCharacterRespawn()
+    public void SendMessageCharacterRespawn(string uid)
     {
-        Debug.Log("send respawn");
         MessageData<string> respawn = new MessageData<string>();
         respawn.message = "respawn";
-        respawn.data = "";
+        respawn.data = uid;
         SendJson(respawn);
     }
 

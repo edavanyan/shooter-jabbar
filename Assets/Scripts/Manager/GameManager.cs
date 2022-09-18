@@ -30,7 +30,7 @@ public class GameManager : MonoBehaviour, IGameManager
     public IHudManager HudManager => hudManager;
     public string UserId => networkManager.Id;
     private string botId = "nan";
-    public string BotId => networkManager.Id;
+    public string BotId => botId;
 
     private void Awake()
     {
@@ -61,9 +61,9 @@ public class GameManager : MonoBehaviour, IGameManager
         }
     }
 
-    private void HandleCharacterRespawn()
+    private void HandleCharacterRespawn(string uid)
     {
-        networkManager.SendMessageCharacterRespawn();
+        networkManager.SendMessageCharacterRespawn(uid);
     }
 
     private void HandleCharacterPositionSync(string uid, Vector2 position)
@@ -310,10 +310,15 @@ public class GameManager : MonoBehaviour, IGameManager
         var senderId = messageData["id"].ToString();
         if (characterManager.CharacterExists(senderId))
         {
-            var data = messageData["data"] as Dictionary<string, object>;
+            var characterById = characterManager.GetCharacterById(senderId);
+            if (!characterById.IsMarkedDead)
+            {
+                var data = messageData["data"] as Dictionary<string, object>;
 
-            var playerPosition = characterManager.GetCharacterById(senderId).Position;
-            bulletManager.Fire(senderId, playerPosition, new Vector3(Convert.ToSingle(data["x"]), 0, Convert.ToSingle(data["y"])));
+                var playerPosition = characterById.Position;
+                bulletManager.Fire(senderId, playerPosition,
+                    new Vector3(Convert.ToSingle(data["x"]), 0, Convert.ToSingle(data["y"])));
+            }
         }
     }
 
