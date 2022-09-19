@@ -101,12 +101,12 @@ public class NetwrokManager : MonoBehaviour, INetworkManager
         SendJson(move);
     }
 
-    public void SendMessageAidClaim(string aidId)
+    public void SendMessageAidClaim(string aidId, string uid)
     {
         MessageData<string> claim = new MessageData<string>();
         claim.message = "aid_pick";
         claim.data = aidId;
-        SendJson(claim);
+        SendJson(claim, uid);
     }
 
     public void SendMessageCharacterDie(string uid)
@@ -164,13 +164,13 @@ public class NetwrokManager : MonoBehaviour, INetworkManager
         SendJson(map);
     }
 
-    async void SendJson<T>(MessageData<T> data)
+    async void SendJson<T>(MessageData<T> data, string uid = "")
     {
         if (ws.State == WebSocketState.Open)
         {
             if (!String.IsNullOrEmpty(data.message))
             {
-                data.id = Id;
+                data.id = uid == "" ? Id : uid;
                 var serializeObject = JsonConvert.SerializeObject(data);
                 await ws.SendText(serializeObject);
             }

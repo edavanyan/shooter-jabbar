@@ -94,7 +94,7 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         if (uid == UserId || uid == BotId)
         {
-            networkManager.SendMessageAidClaim(aidId);
+            networkManager.SendMessageAidClaim(aidId, uid);
         }
     }
 

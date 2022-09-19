@@ -17,7 +17,6 @@ public class CharacterManager : MonoBehaviour, ICharacterManager
     public void SpawnCharacter(string uid, Vector3 spawnPosition)
     {
         var character = Instantiate(characterPrefab, spawnPosition, Quaternion.identity, transform);
-        character.SyncedPosition = spawnPosition;
         charactersById.Add(uid, character);
         character.Init(uid);
 
@@ -25,6 +24,7 @@ public class CharacterManager : MonoBehaviour, ICharacterManager
         character.OnPositionSync += position => OnPositionSync(character.Id, position);
         
         GameManager.Instance.HudManager.InGameUIManager.CreateHealth(uid);
+        character.SetPosition(spawnPosition);
     }
 
     public void SyncronizePositionFromNetwrok(string uid, Vector3 position)
@@ -136,10 +136,11 @@ public class CharacterManager : MonoBehaviour, ICharacterManager
         foreach (var (uid, character) in charactersById)
         {
             character.Move();
-            var characterPosition = new Vector3(character.Position.x, character.Position.y, character.Position.z + 1.5f);
-            var position = GameManager.Instance.Camera.WorldToScreenPosition(characterPosition);
-            var canvasPosition = GameManager.Instance.HudManager.PointToCanvas(position);
-            GameManager.Instance.HudManager.InGameUIManager.SetHealthBarPosition(canvasPosition, uid);
+            if (!character.IsMarkedDead)
+            {
+                var characterPosition = new Vector3(character.Position.x, character.Position.y, character.Position.z + 1.5f);
+                GameManager.Instance.HudManager.InGameUIManager.SetHealthBarPosition(characterPosition, uid);
+            }
         }
     }
 }

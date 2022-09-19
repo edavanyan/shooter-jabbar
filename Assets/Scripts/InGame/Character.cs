@@ -52,6 +52,7 @@ public class Character : MonoBehaviour, ICharacter
         isAlive = true;
         gameObject.SetActive(isAlive);
         SetPosition(position);
+        
         characterHealth.Reset();
         GameManager.Instance.HudManager.InGameUIManager.ShowCharacterHealth(Id);
         GameManager.Instance.HudManager.InGameUIManager.ChangeHealth(10, Id);
@@ -61,6 +62,9 @@ public class Character : MonoBehaviour, ICharacter
     {
         transform.position = position;
         SyncedPosition = position;
+        var characterPosition = new Vector3(Position.x, Position.y, Position.z + 1.5f);
+        GameManager.Instance.HudManager.InGameUIManager.SetHealthBarPosition(characterPosition, Id);
+        
         OnSynchronizePosition();
     }
 
@@ -89,7 +93,9 @@ public class Character : MonoBehaviour, ICharacter
 
     public void Move()
     {
-        syncronizeTimer += Time.deltaTime;
+        if (isAlive)
+        {
+            syncronizeTimer += Time.deltaTime;
             if (inputMotion != Vector3.zero)
             {
                 characterEngine.Move(inputMotion * (Time.deltaTime * Speed));
@@ -107,7 +113,9 @@ public class Character : MonoBehaviour, ICharacter
             {
                 SynchronizeWithNetwork();
             }
+
             cachedMotion = inputMotion;
+        }
     }
 
     private void SynchronizeWithNetwork()

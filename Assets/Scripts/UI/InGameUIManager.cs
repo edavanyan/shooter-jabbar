@@ -34,9 +34,11 @@ public class InGameUIManager : MonoBehaviour, IInGameUIManager
         healthBars[uid].SetHealth(healthAmount);
     }
 
-    public void SetHealthBarPosition(Vector2 position, string uid)
+    public void SetHealthBarPosition(Vector3 position, string uid)
     {
-        ((RectTransform)healthBars[uid].transform).anchoredPosition = position;
+        var screenPosition = GameManager.Instance.Camera.WorldToScreenPosition(position);
+        var canvasPosition = GameManager.Instance.HudManager.PointToCanvas(screenPosition);
+        ((RectTransform)healthBars[uid].transform).anchoredPosition = canvasPosition;
     }
 
     public void HideCharacterHealth(string uid)

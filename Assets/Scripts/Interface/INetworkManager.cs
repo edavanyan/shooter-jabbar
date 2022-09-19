@@ -12,7 +12,7 @@ public interface INetworkManager
     void SendMessageJoin();
     void SendMessageFire(Vector2 direction);
     void SendMessageMove(Vector2 direction);
-    void SendMessageAidClaim(string aidId);
+    void SendMessageAidClaim(string aidId, string uid);
     void SendMessageCharacterDie(string uid);
     void SendMessageCharacterRespawn(string uid);
     void SendMessageBulletHit(string bulletId);
