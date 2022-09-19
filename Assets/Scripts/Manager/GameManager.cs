@@ -187,6 +187,10 @@ public class GameManager : MonoBehaviour, IGameManager
     {
         var senderId = messageData["id"].ToString();
         characterManager.RemoveCharacter(senderId);
+        if (senderId == botId)
+        {
+            botId = "empty";
+        }
     }
 
     private void SendMapData(Dictionary<string,object> messageData)
