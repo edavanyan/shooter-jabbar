@@ -11,7 +11,9 @@ public class CameraController : MonoBehaviour
 
     public Vector2 WorldToScreenPosition(Vector3 position)
     {
+        var offset = destination - transform.position;
         var viewportPosition = camera.WorldToScreenPoint(position);
+        Debug.Log(viewportPosition);
         return viewportPosition;
     }
 
@@ -19,10 +21,10 @@ public class CameraController : MonoBehaviour
     {
         destination = position + _offset;
         var smoothPosition = Vector3.Lerp(transform.position, destination, _smoothSpeed);
-        if (smoothPosition.z < -14)
-        {
-            smoothPosition.z = -14;
-        }
+        // if (smoothPosition.z < -14)
+        // {
+        //     smoothPosition.z = -14;
+        // }
         transform.position = smoothPosition;
     }
 }

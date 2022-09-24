@@ -8,4 +8,6 @@ public interface IGameManager
     string UserId { get; }
     string BotId { get; }
     CameraController Camera { get; }
+
+    void OnMoveCommand(Vector2 direction);
 }

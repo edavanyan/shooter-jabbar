@@ -138,7 +138,7 @@ public class CharacterManager : MonoBehaviour, ICharacterManager
             character.Move();
             if (!character.IsMarkedDead)
             {
-                var characterPosition = new Vector3(character.Position.x, character.Position.y, character.Position.z + 1.5f);
+                var characterPosition = new Vector3(character.Position.x, character.Position.y + 2f, character.Position.z);
                 GameManager.Instance.HudManager.InGameUIManager.SetHealthBarPosition(characterPosition, uid);
             }
         }

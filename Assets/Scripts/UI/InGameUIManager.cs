@@ -7,14 +7,12 @@ public class InGameUIManager : MonoBehaviour, IInGameUIManager
     [SerializeField] private HealthBar healthPrefab;
     private ComponentPool<HealthBar> healthPool;
     private Dictionary<string, HealthBar> healthBars;
-    private Dictionary<string, Vector2> healthBarPositions;
 
     private void Awake()
     {
         healthPool = new ComponentPool<HealthBar>(healthPrefab, transform);
 
         healthBars = new Dictionary<string, HealthBar>();
-        healthBarPositions = new Dictionary<string, Vector2>();
     }
 
     public void CreateHealth(string uid)

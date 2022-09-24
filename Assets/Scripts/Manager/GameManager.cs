@@ -43,7 +43,6 @@ public class GameManager : MonoBehaviour, IGameManager
             aidManager = GetComponent<AidManager>();
             bulletManager = GetComponent<BulletManager>();
             networkManager = GetComponent<NetwrokManager>();
-            hudManager = GetComponent<HUDManager>();
 
             characterManager.OnCharacterDie += HandleCharacterDie;
             characterManager.OnPositionSync += HandleCharacterPositionSync;
@@ -110,6 +109,11 @@ public class GameManager : MonoBehaviour, IGameManager
     private void OnMoveInput(InputAction.CallbackContext context)
     {
         var direction = context.ReadValue<Vector2>().normalized;
+        OnMoveCommand(direction);
+    }
+
+    public void OnMoveCommand(Vector2 direction)
+    {
         networkManager.SendMessageMove(new Vector2(direction.x, direction.y));
     }
 

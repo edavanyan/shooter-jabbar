@@ -7,13 +7,11 @@ public class HUDManager : MonoBehaviour, IHudManager
 {
     public event Action JoinButtonPressed;
     private Canvas canvas;
-    [SerializeField]
-    private Canvas menu;
+    [SerializeField] private Canvas menu;
 
     [SerializeField] private GameObject loadingGO;
-    
-    [SerializeField]
-    private InGameUIManager inGameUIManager;
+
+    [SerializeField] private InGameUIManager inGameUIManager;
 
     public IInGameUIManager InGameUIManager => inGameUIManager;
 
@@ -29,25 +27,25 @@ public class HUDManager : MonoBehaviour, IHudManager
         JoinButtonPressed();
     }
 
-    private IEnumerator HideLoading()
-    {
-        yield return new WaitForUpdate();
-        loadingGO.SetActive(false);
-    }
-    
     public void ShowMenu()
     {
-        StartCoroutine(HideLoading());
+        loadingGO.SetActive(false);
         menu.gameObject.SetActive(true);
     }
 
     public Vector2 PointToCanvas(Vector2 point)
     {
-        return new Vector2(point.x - Screen.width / 2f, point.y - Screen.height / 2f);
+        var viewportPoint = GameManager.Instance.Camera.camera.ScreenToViewportPoint(point);
+        RectTransform rect = (RectTransform)transform;
+        var canvasPoint = new Vector2(
+            viewportPoint.x * rect.sizeDelta.x - rect.sizeDelta.x / 2,
+            viewportPoint.y * rect.sizeDelta.y - rect.sizeDelta.y / 2);
+        return canvasPoint;
     }
 
     private void HideMenu()
     {
+        inGameUIManager.gameObject.SetActive(true);
         menu.gameObject.SetActive(false);
-    } 
+    }
 }
