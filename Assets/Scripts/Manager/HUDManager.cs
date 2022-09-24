@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Canvas))]
@@ -8,7 +9,10 @@ public class HUDManager : MonoBehaviour, IHudManager
     private Canvas canvas;
     [SerializeField]
     private Canvas menu;
-    [SerializeField] 
+
+    [SerializeField] private GameObject loadingGO;
+    
+    [SerializeField]
     private InGameUIManager inGameUIManager;
 
     public IInGameUIManager InGameUIManager => inGameUIManager;
@@ -16,6 +20,7 @@ public class HUDManager : MonoBehaviour, IHudManager
     private void Awake()
     {
         canvas = GetComponent<Canvas>();
+        loadingGO = GameObject.Find("Loading");
     }
 
     public void OnJoinButtonPressed()
@@ -24,14 +29,15 @@ public class HUDManager : MonoBehaviour, IHudManager
         JoinButtonPressed();
     }
 
-    private void HideLoading()
+    private IEnumerator HideLoading()
     {
-        //todo implement loading.._
+        yield return new WaitForUpdate();
+        loadingGO.SetActive(false);
     }
     
     public void ShowMenu()
     {
-        HideLoading();
+        StartCoroutine(HideLoading());
         menu.gameObject.SetActive(true);
     }
 
