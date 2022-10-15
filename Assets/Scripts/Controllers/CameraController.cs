@@ -11,9 +11,7 @@ public class CameraController : MonoBehaviour
 
     public Vector2 WorldToScreenPosition(Vector3 position)
     {
-        var offset = destination - transform.position;
         var viewportPosition = camera.WorldToScreenPoint(position);
-        Debug.Log(viewportPosition);
         return viewportPosition;
     }
 

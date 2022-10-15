@@ -14,6 +14,10 @@ public class Character : MonoBehaviour, ICharacter
     private const float Speed = 9f;
 
     private string id;
+    [SerializeField] private GameObject healEffect; 
+    [SerializeField] private GameObject damageEffect; 
+    [SerializeField] private Material playerMaterial; 
+        
     [SerializeField]
     private float smoothSpeed = 0.001f;
     public string Id => id;
@@ -78,6 +82,8 @@ public class Character : MonoBehaviour, ICharacter
     {
         isAlive = false;
         gameObject.SetActive(isAlive);
+        healEffect.SetActive(false);
+        damageEffect.SetActive(false);
         GameManager.Instance.HudManager.InGameUIManager.HideCharacterHealth(id);
     }
 
@@ -135,18 +141,36 @@ public class Character : MonoBehaviour, ICharacter
     public void SetInputMotion(Vector3 motion)
     {
         inputMotion = motion;
+        if (inputMotion != Vector3.zero)
+        {
+            playerMaterial.SetInt("moving", 1);
+        }
+        else
+        {
+            playerMaterial.SetInt("moving", 0);
+        }
     }
 
     public void Heal(int amount)
     {
+        healEffect.SetActive(true);
+        StartCoroutine(HideHealEffect(healEffect));
         characterHealth.Damage(-amount);
         GameManager.Instance.HudManager.InGameUIManager.ChangeHealth(characterHealth.Health, Id);
+    }
+
+    private IEnumerator HideHealEffect(GameObject effect)
+    {
+        yield return new WaitForSeconds(1);
+        effect.SetActive(false);
     }
 
     public void DamageBy(int amount, string uid)
     {
         characterHealth.Damage(amount);
         GameManager.Instance.HudManager.InGameUIManager.ChangeHealth(characterHealth.Health, Id);
+        damageEffect.SetActive(true);
+        StartCoroutine(HideHealEffect(damageEffect));
         if (characterHealth.Health <= 0)
         {
             OnDie(id, uid);
