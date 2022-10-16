@@ -25,13 +25,14 @@ Shader "Unlit/VaweShader"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+                float3 normals : NORMAL;
             };
 
             struct v2f
             {
                 float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
+                float3 normals : TEXCOORD1;
             };
 
             float4 _Color;
@@ -39,13 +40,19 @@ Shader "Unlit/VaweShader"
             v2f vert (appdata v)
             {
                 v2f o;
-                float ty = cos((v.uv.y - _Time.z / 10) * TAU * 2);
-                float tx = cos((v.uv.x - _Time.z / 10) * TAU * 2);
-                v.vertex.y = (tx * ty) ;
-                o.vertex = UnityObjectToClipPos(v.vertex);
+                // float ty = cos((v.uv.y - _Time.z * 0.1) * TAU * 5) * 2.5;
+                // float tx = cos((v.uv.x - _Time.z * 0.1) * TAU * 5) * 2.5;
+                // v.vertex.y = (tx * ty) * 0.1 ;
                 
+                float2 uvCenter = v.uv * 2 - 1;
+                float center = length(uvCenter);
+                float ty = cos(center * TAU * 15 - _Time.z) * 0.5;
+                ty *= 1 - center;
+                v.vertex.z = ty * 0.2;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+
+                o.normals = v.normals;
                 o.uv = v.uv;
-                UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
 
@@ -56,11 +63,12 @@ Shader "Unlit/VaweShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // sample the texture
-                float ty = cos((i.uv.y) * TAU * _Time.x) * 0.5 + 0.5;
-                float tx = cos((i.uv.x) * TAU + _Time.z) * 0.5 + 0.5;
+                float2 uvCenter = i.uv * 2 - 1;
+                float center = length(uvCenter);
+                float ty = cos(center * TAU * 15 - _Time.y) * 0.5 - 0.5;
+                float tx = cos((i.uv.x + ty - _Time.y) * TAU) * 0.5 - 0.5;
                 fixed4 col = _Color;
-                return lerp(col, float4(1, 1, 1, 1), tx * ty * _CosTime.z);
+                return lerp(col, float4(1, 1, 1, 1), tx);
             }
             ENDCG
         }

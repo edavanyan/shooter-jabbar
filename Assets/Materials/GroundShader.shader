@@ -49,12 +49,10 @@ Shader "Unlit/GroundShader"
             v2f vert (appdata v)
             {
                 v2f o;
-                float t = sin((v.uv.y + _Time.y / 10) * TAU * 20);
+                float t = cos((v.uv.y + _Time.y / 10) * TAU * 20);
                 v.vertex.y = cos((v.uv.x + _Time.y / 10) * TAU * 20) * t * 0.02;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                // o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.normals = UnityObjectToWorldNormal(v.normals);
-                // o.normals = v.normals;
+                o.normals = v.normals;
                 o.uv = v.uv;
                 return o;
             }
@@ -72,8 +70,8 @@ Shader "Unlit/GroundShader"
             fixed4 frag (v2f i) : SV_Target
             {
                 float xOffset = i.uv.y;
-                float t = cos((i.uv.x + _Time.z / 10) * TAU * 2) * 0.5 + 0.5;
-                float u = sin((i.uv.y + _Time.z) * TAU * 2) * 0.5 + 0.5;
+                float t = cos((i.uv.x + _Time.y / 10) * TAU * 2) * 0.5 + 0.5;
+                float u = cos((i.uv.y + _Time.x) * TAU * 2) * 0.5 + 0.5;
                 float4 tx = inverseLerp(_ColorA, _ColorB, clamp(t, 0, 1));
                 float4 ty = inverseLerp(_ColorA, _ColorB, clamp(u, 0, 1));
                 return clamp(t + u, 0.9, 1);//fixed4(t, u, 0, 1);
