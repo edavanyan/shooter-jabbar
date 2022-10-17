@@ -2,6 +2,7 @@ Shader "Unlit/GroundShader"
 {
     Properties
     {
+        _Mask("Mask Texture", 2D) = "white" {}
         _ColorA ("Start Color", color) = (1, 1, 1, 1)
         _ColorB ("End Color", color) = (0, 0, 0, 1)
 
@@ -10,11 +11,17 @@ Shader "Unlit/GroundShader"
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags
+         {
+             "RenderType"="Transparent"
+             "Queue"="Transparent" 
+        }
         LOD 100
 
         Pass
         {
+            BLEND SrcAlpha OneMinusSrcAlpha
+            
             CGPROGRAM
 // Upgrade NOTE: excluded shader from DX11; has structs without semantics (struct v2f members normals)
 #pragma exclude_renderers d3d11
@@ -41,6 +48,9 @@ Shader "Unlit/GroundShader"
                 float2 uv : TEXCOORD1;
             };
 
+            sampler2D _Mask;
+            float4 _Mask_ST;
+            
             float4 _ColorA;
             float4 _ColorB;
             float _GradStart;
@@ -49,11 +59,10 @@ Shader "Unlit/GroundShader"
             v2f vert (appdata v)
             {
                 v2f o;
-                float t = cos((v.uv.y + _Time.y / 10) * TAU * 20);
-                v.vertex.y = cos((v.uv.x + _Time.y / 10) * TAU * 20) * t * 0.02;
+
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.normals = v.normals;
-                o.uv = v.uv;
+                o.uv = TRANSFORM_TEX(v.uv, _Mask);
                 return o;
             }
 
@@ -69,17 +78,17 @@ Shader "Unlit/GroundShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float xOffset = i.uv.y;
-                float t = cos((i.uv.x + _Time.y / 10) * TAU * 2) * 0.5 + 0.5;
-                float u = cos((i.uv.y + _Time.x) * TAU * 2) * 0.5 + 0.5;
-                float4 tx = inverseLerp(_ColorA, _ColorB, clamp(t, 0, 1));
-                float4 ty = inverseLerp(_ColorA, _ColorB, clamp(u, 0, 1));
-                return clamp(t + u, 0.9, 1);//fixed4(t, u, 0, 1);
-                
-                // float t = smoothstep(_GradStart, _GradEnd, i.uv.x);
-                // t = saturate(t);
-                // fixed4 col = lerp(_ColorA, _ColorB, t);
-                // return col;
+                float4 mask = tex2D(_Mask, i.uv);
+                float3 col = float3(250.0 / 255.0, 208.0/255.0, 126.0/255.0);
+                float t = cos((i.uv.x + _Time.y / 40) * TAU * 100) * 0.5 + 0.5;
+                float u = cos((i.uv.y + _Time.x / 10) * TAU * 100) * 0.5 + 0.5;
+                float tiv = sin(_Time.z * TAU) * 0.5 + 0.5;
+                if (mask.x < 1)
+                {
+                    mask.x += tiv / 10;
+                    mask.x = clamp(mask.x, 0, 1);
+                }
+                return float4(col * (clamp(t + u, 0.96, 1)), mask.x);
             }
             ENDCG
         }

@@ -46,7 +46,7 @@ Shader "Unlit/VaweShader"
                 
                 float2 uvCenter = v.uv * 2 - 1;
                 float center = length(uvCenter);
-                float ty = cos(center * TAU * 15 - _Time.z) * 0.5;
+                float ty = cos((center * 5 - _Time.y / 5) * TAU) * 0.5;
                 ty *= 1 - center;
                 v.vertex.z = ty * 0.2;
                 o.vertex = UnityObjectToClipPos(v.vertex);

@@ -2,24 +2,26 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(Slider))]
 public class HealthBar : MonoBehaviour, IPoolable
 {
-    private Slider slider;
+    [SerializeField] private Shader healthBarShader;
+    [SerializeField] private Image healthBarImage;
+    private Material healthbar;
 
     private void Awake()
     {
-        slider = GetComponent<Slider>();
+        healthbar = new Material(healthBarShader);
+        healthBarImage.material = healthbar;
     }
 
     public void SetHealth(int health)
     {
-        slider.value = health;
+        healthbar.SetFloat("health", health / 10f);
     }
 
     public void New()
     {
-        slider.value = slider.maxValue;
+        healthbar.SetFloat("health", 1f);
         gameObject.SetActive(true);
     }
 
