@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterEngine))]
@@ -16,7 +17,9 @@ public class Character : MonoBehaviour, ICharacter
     private string id;
     [SerializeField] private GameObject healEffect; 
     [SerializeField] private GameObject damageEffect; 
-    [SerializeField] private Material playerMaterial; 
+    [SerializeField] private MeshRenderer playerRenderer; 
+    [SerializeField] private Shader playerShader;
+    private Material playerMaterial;
         
     [SerializeField]
     private float smoothSpeed = 0.001f;
@@ -49,6 +52,10 @@ public class Character : MonoBehaviour, ICharacter
     {
         characterEngine = GetComponent<CharacterEngine>();
         characterHealth = GetComponent<CharacterHealth>();
+
+        playerMaterial = new Material(playerShader);
+        playerMaterial.CopyPropertiesFromMaterial(playerRenderer.material);
+        playerRenderer.material = playerMaterial;
     }
 
     public void Respawn(Vector3 position)
@@ -141,14 +148,6 @@ public class Character : MonoBehaviour, ICharacter
     public void SetInputMotion(Vector3 motion)
     {
         inputMotion = motion;
-        if (inputMotion != Vector3.zero)
-        {
-            playerMaterial.SetInt("moving", 1);
-        }
-        else
-        {
-            playerMaterial.SetInt("moving", 0);
-        }
     }
 
     public void Heal(int amount)
@@ -163,14 +162,26 @@ public class Character : MonoBehaviour, ICharacter
     {
         yield return new WaitForSeconds(1);
         effect.SetActive(false);
+        playerMaterial.SetInt("damaged", 0);
+    }
+
+    private IEnumerator HideDamageEffect()
+    {
+        yield return new WaitForSeconds(0.4f);
+        playerMaterial.SetInt("damaged", 0);
+    }
+
+    public void CharacterDamageEffect()
+    {
+        playerMaterial.SetInt("damaged", 1);
+        StartCoroutine(HideDamageEffect());
     }
 
     public void DamageBy(int amount, string uid)
     {
         characterHealth.Damage(amount);
         GameManager.Instance.HudManager.InGameUIManager.ChangeHealth(characterHealth.Health, Id);
-        damageEffect.SetActive(true);
-        StartCoroutine(HideHealEffect(damageEffect));
+        
         if (characterHealth.Health <= 0)
         {
             OnDie(id, uid);

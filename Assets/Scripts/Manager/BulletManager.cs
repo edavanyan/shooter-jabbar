@@ -34,6 +34,7 @@ public class BulletManager : MonoBehaviour, IBulletManager
                         DestroyBullet(bullet);
                         if (character.Health > 0)
                         {
+                            character.CharacterDamageEffect();
                             OnBulletHit(character.Id);
                         }
                     }

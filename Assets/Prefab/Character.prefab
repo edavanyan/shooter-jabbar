@@ -388,5 +388,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healEffect: {fileID: 8446722842815296194}
   damageEffect: {fileID: 1459889260636987566}
-  playerMaterial: {fileID: 2100000, guid: 83f0636d0e8077bfb9d47916f15c098b, type: 2}
+  playerRenderer: {fileID: 8634245648052568777}
+  playerShader: {fileID: 4800000, guid: dff46fe82f1b2dbda8fbbdd2b1267e75, type: 3}
   smoothSpeed: 0.001
