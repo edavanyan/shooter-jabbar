@@ -94,7 +94,7 @@ Shader "Unlit/PlayerShader"
                 float4 t = lerp(_ColorA, _ColorB, frac((i.uv.x + i.uv.y + xOffset) * 2));
 
                 
-                float4 fresnel = step(0.1, (1 - dot(halfVec, N))) * _ColorB;
+                float4 fresnel = 0;//step(0.1, (1 - dot(halfVec, N))) * _ColorB;
 
                 
                 return float4(_ColorA.xyz * diffuseLight + specular * _LightColor0 + fresnel.xyz, 1);
@@ -102,5 +102,6 @@ Shader "Unlit/PlayerShader"
             ENDCG
         }
     }
+    Fallback "Diffuse"
 }
 

@@ -112,5 +112,6 @@ Shader "Unlit/GroundShader"
             ENDCG
         }
     }
+    Fallback "Diffuse"
 }
 
